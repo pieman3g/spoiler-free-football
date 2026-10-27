@@ -1,12 +1,15 @@
 import json
 import urllib.request
-
-# ESPN's public unauthenticated Premier League scoreboard endpoint
-API_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard"
+import urllib.parse
+from datetime import datetime
 
 def fetch_data():
+    # Automatically get today's date in YYYYMMDD format for ESPN
+    today_str = datetime.now().strftime("%Y%m%d")
+    api_url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates={today_str}"
+    
     req = urllib.request.Request(
-        API_URL, 
+        api_url, 
         headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     )
     
@@ -17,12 +20,19 @@ def fetch_data():
             matches = []
             events = data.get("events", [])
             
+            # If no matches today, fallback to the current week's scoreboard without the strict date parameter
+            if not events:
+                fallback_url = "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard"
+                req = urllib.request.Request(fallback_url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req) as fallback_resp:
+                    data = json.loads(fallback_resp.read().decode())
+                    events = data.get("events", [])
+
             for event in events:
                 match_id = event.get("id")
-                match_name = event.get("name", "Match") # e.g., "Arsenal vs Chelsea"
+                match_name = event.get("name", "Match")
                 status_type = event.get("status", {}).get("type", {})
                 
-                # State can be 'pre' (upcoming), 'in' (live), 'post' (finished)
                 state = status_type.get("state", "pre")
                 detail = status_type.get("detail", "Scheduled")
                 
@@ -58,6 +68,19 @@ def fetch_data():
                     "upvotes": 0,
                     "downvotes": 0
                 })
+
+            # Fallback sample data if the schedule block is empty between matchdays
+            if not matches:
+                matches = [{
+                    "id": 1,
+                    "teams": "Arsenal vs Chelsea",
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "score": "Upcoming",
+                    "status": "Scheduled",
+                    "highlightUrl": "https://www.youtube.com/results?search_query=Arsenal+vs+Chelsea+highlights",
+                    "upvotes": 0,
+                    "downvotes": 0
+                }]
 
             with open("matches.json", "w") as f:
                 json.dump(matches, f, indent=2)
