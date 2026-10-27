@@ -1,3 +1,140 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 15px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.spoiler-badge {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.nav-tab {
+    color: #9ca3af;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.nav-tab.active {
+    color: #ffffff;
+    font-weight: 500;
+    border-bottom: 2px solid #ffffff;
+    padding-bottom: 10px;
+    margin-bottom: -11px;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #ffffff;
+}
+
+.section-subtitle {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    margin-bottom: 15px;
+}
+
+/* Match Card Layout */
+.match-card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+}
+
+.card-top {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-top .status {
+    color: #ffffff;
+}
+
+.teams-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.team-side {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 38%;
+}
+
+.team-side.home {
+    justify-content: flex-start;
+}
+
+.team-side.away {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.team-badge {
+    width: 24px !important;
+    height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+    object-fit: contain;
+}
+
+.team-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #ffffff;
+}
+
 .center-area {
     display: flex;
     align-items: center;
@@ -11,7 +148,6 @@
     font-weight: 500;
 }
 
-/* Completely hide the vs-divider when it has the hidden class */
 .vs-divider.hidden {
     display: none !important;
 }
@@ -24,7 +160,58 @@
     color: #ffffff;
 }
 
-/* Ensure the score is hidden by default and displays properly when toggled */
 .score.hidden {
     display: none !important;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #252525;
+    padding-top: 10px;
+    margin-top: 2px;
+}
+
+.highlight-btn {
+    background-color: #dc2626;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.highlight-btn:hover {
+    background-color: #b91c1c;
+}
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reveal-btn, .vote-btn {
+    background: #2a2a2a;
+    border: 1px solid #3f3f46;
+    color: #e0e0e0;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.reveal-btn:hover, .vote-btn:hover {
+    background: #3f3f46;
+}
+
+.vote-btn.active {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
 }
