@@ -2,27 +2,29 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 80px;
+    min-width: 90px;
 }
 
 .vs-divider {
     color: #6b7280;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 500;
 }
 
+/* Completely hide the vs-divider when it has the hidden class */
 .vs-divider.hidden {
-    display: none;
+    display: none !important;
 }
 
 .score {
     font-weight: bold;
     font-family: monospace;
-    font-size: 1.1rem;
-    letter-spacing: 1px;
+    font-size: 1.35rem;
+    letter-spacing: 2px;
     color: #ffffff;
 }
 
+/* Ensure the score is hidden by default and displays properly when toggled */
 .score.hidden {
-    display: none;
+    display: none !important;
 }
