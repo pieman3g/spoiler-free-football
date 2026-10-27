@@ -102,6 +102,12 @@ header {
     color: #ffffff;
 }
 
+.date-nav-btn:disabled {
+    cursor: not-allowed;
+    background: #1c1c1f;
+    border-color: #2a2a2e;
+}
+
 .date-dropdown {
     flex: 1;
     background: #242427;
