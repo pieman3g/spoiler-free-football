@@ -9,7 +9,7 @@ async function loadMatches() {
     const events = data.events || [];
     
     if (!events || events.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">No matches scheduled for today.</p>';
+      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No matches scheduled for today.</p>';
       return;
     }
     
@@ -49,7 +49,7 @@ async function loadMatches() {
         statusDisplay = `LIVE ${detail}`;
       } else if (state === "post") {
         scoreStr = `${homeScore} - ${awayScore}`;
-        statusDisplay = "FT";
+        statusDisplay = "FULL TIME";
       }
 
       return {
@@ -80,7 +80,7 @@ async function loadFallbackMatches() {
     const matches = await response.json();
     renderMatches(matches);
   } catch (err) {
-    container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">Unable to load matches.</p>';
+    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Unable to load matches.</p>';
   }
 }
 
@@ -92,44 +92,40 @@ function renderMatches(matches) {
   matches.forEach(match => {
     const userVote = savedVotes[match.id] || 0;
     const currentUpvotes = (match.upvotes || 0) + (userVote === 1 ? 1 : 0);
-    const currentDownvotes = (match.downvotes || 0) + (userVote === -1 ? 1 : 0);
 
-    const row = document.createElement('div');
-    row.classList.add('match-row');
+    const card = document.createElement('div');
+    card.classList.add('match-card');
 
-    let teamsHtml = `
-      <div class="team-group">
-        ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge" width="22" height="22">` : ''}
-        <span>${match.homeTeam}</span>
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="status">${match.status || 'FULL TIME'}</span>
       </div>
-      <span class="vs-text">vs</span>
-      <div class="team-group">
-        ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge" width="22" height="22">` : ''}
-        <span>${match.awayTeam}</span>
+      <div class="teams-container">
+        <div class="team-side home">
+          ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge">` : ''}
+          <span class="team-name">${match.homeTeam}</span>
+        </div>
+        <span class="vs-divider">vs</span>
+        <div class="team-side away">
+          <span class="team-name">${match.awayTeam}</span>
+          ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge">` : ''}
+        </div>
+      </div>
+      <div class="card-footer">
+        <div>
+          ${match.highlightUrl && match.highlightUrl !== '#' 
+            ? `<a href="${match.highlightUrl}" target="_blank" rel="noopener noreferrer" class="highlight-btn">▶ Highlights</a>` 
+            : '<span style="color:#6b7280; font-size:0.8rem;">No Video</span>'}
+        </div>
+        <div class="card-actions">
+          <span class="score hidden" id="score-${match.id}">${match.score}</span>
+          <button class="reveal-btn" onclick="toggleScore(${match.id})">Show score</button>
+          <button class="vote-btn ${userVote === 1 ? 'active' : ''}" onclick="vote(${match.id})">★ Save</button>
+        </div>
       </div>
     `;
 
-    row.innerHTML = `
-      <div class="match-meta">
-        <span style="color: #6c757d; font-weight: bold; font-size: 0.8rem;">${match.status || 'FT'}</span>
-      </div>
-      <div class="match-teams">${teamsHtml}</div>
-      <div>
-        ${match.highlightUrl && match.highlightUrl !== '#' 
-          ? `<a href="${match.highlightUrl}" target="_blank" rel="noopener noreferrer" class="highlight-btn">▶ Highlights</a>` 
-          : '<span style="color:#adb5bd; font-size:0.85rem;">No Video</span>'}
-      </div>
-      <div class="score-area">
-        <span class="score hidden" id="score-${match.id}">${match.score}</span>
-        <button class="reveal-btn" onclick="toggleScore(${match.id})">Reveal</button>
-      </div>
-      <div class="vote-section">
-        <button class="vote-btn ${userVote === 1 ? 'active' : ''}" onclick="vote(${match.id}, 'up')">👍 <span>${currentUpvotes}</span></button>
-        <button class="vote-btn ${userVote === -1 ? 'active' : ''}" onclick="vote(${match.id}, 'down')">👎 <span>${currentDownvotes}</span></button>
-      </div>
-    `;
-
-    container.appendChild(row);
+    container.appendChild(card);
   });
 }
 
@@ -138,18 +134,12 @@ function toggleScore(matchId) {
   const btn = event.target;
   
   scoreSpan.classList.toggle('hidden');
-  btn.textContent = scoreSpan.classList.contains('hidden') ? 'Reveal' : 'Hide';
+  btn.textContent = scoreSpan.classList.contains('hidden') ? 'Show score' : 'Hide score';
 }
 
-function vote(matchId, type) {
+function vote(matchId) {
   let savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
-  
-  if (type === 'up') {
-    savedVotes[matchId] = savedVotes[matchId] === 1 ? 0 : 1;
-  } else if (type === 'down') {
-    savedVotes[matchId] = savedVotes[matchId] === -1 ? 0 : -1;
-  }
-
+  savedVotes[matchId] = savedVotes[matchId] === 1 ? 0 : 1;
   localStorage.setItem('spoiler_free_votes', JSON.stringify(savedVotes));
   loadMatches();
 }
