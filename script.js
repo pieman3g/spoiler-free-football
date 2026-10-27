@@ -105,7 +105,10 @@ function renderMatches(matches) {
           ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge">` : ''}
           <span class="team-name">${match.homeTeam}</span>
         </div>
-        <span class="vs-divider">vs</span>
+        <div class="center-area">
+          <span class="vs-divider" id="vs-${match.id}">vs</span>
+          <span class="score hidden" id="score-${match.id}">${match.score}</span>
+        </div>
         <div class="team-side away">
           <span class="team-name">${match.awayTeam}</span>
           ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge">` : ''}
@@ -118,7 +121,6 @@ function renderMatches(matches) {
             : '<span style="color:#6b7280; font-size:0.8rem;">No Video</span>'}
         </div>
         <div class="card-actions">
-          <span class="score hidden" id="score-${match.id}">${match.score}</span>
           <button class="reveal-btn" onclick="toggleScore(${match.id})">Show score</button>
           <button class="vote-btn ${userVote === 1 ? 'active' : ''}" onclick="vote(${match.id})">★ Save</button>
         </div>
@@ -131,9 +133,12 @@ function renderMatches(matches) {
 
 function toggleScore(matchId) {
   const scoreSpan = document.getElementById(`score-${matchId}`);
+  const vsSpan = document.getElementById(`vs-${matchId}`);
   const btn = event.target;
   
   scoreSpan.classList.toggle('hidden');
+  vsSpan.classList.toggle('hidden');
+  
   btn.textContent = scoreSpan.classList.contains('hidden') ? 'Show score' : 'Hide score';
 }
 
