@@ -67,13 +67,19 @@ async function loadMatches() {
         statusText = "SCHEDULED";
       }
 
-      // Extract goal scorers if available in competition details
+      // Extract goal scorers accurately from ESPN detail structures
       let goalsList = [];
       if (competitions.details) {
         competitions.details.forEach(detail => {
           if (detail.scoringPlay) {
-            const scorerName = detail.athlete?.displayName || "Goal";
-            const clockTime = detail.clock?.displayValue || "";
+            let scorerName = "Goal";
+            if (detail.athletes && detail.athletes.length > 0) {
+              scorerName = detail.athletes[0].displayName || detail.athletes[0].shortName || "Goal";
+            } else if (detail.text) {
+              scorerName = detail.text;
+            }
+            
+            const clockTime = detail.clock?.displayValue ? `${detail.clock.displayValue}'` : "";
             const scoringTeam = detail.team?.id;
             const isHome = scoringTeam === competitors.find(c => c.homeAway === "home")?.team?.id;
             
