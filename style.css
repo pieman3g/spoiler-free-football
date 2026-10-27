@@ -1,0 +1,147 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f8f9fa;
+  color: #212529;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 30px 15px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 15px;
+  margin-bottom: 25px;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+#matches-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.match-row {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 120px 1fr 140px 110px;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: border-color 0.15s ease;
+}
+
+.match-row:hover {
+  border-color: #adb5bd;
+}
+
+.match-meta {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.match-teams {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.score-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score {
+  font-family: monospace;
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background-color: #e9ecef;
+  color: transparent;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.score:not(.hidden) {
+  background-color: #d8f3dc;
+  color: #1b4332;
+  text-shadow: none;
+}
+
+.reveal-btn {
+  background-color: #f1f3f5;
+  color: #495057;
+  border: 1px solid #ced4da;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.reveal-btn:hover {
+  background-color: #e9ecef;
+  color: #212529;
+}
+
+.vote-section {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.vote-btn {
+  background-color: #fff;
+  border: 1px solid #ced4da;
+  color: #495057;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+.vote-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+@media (max-width: 650px) {
+  .match-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    text-align: center;
+  }
+  .vote-section {
+    justify-content: center;
+  }
+  .score-area {
+    justify-content: center;
+  }
+}
