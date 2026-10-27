@@ -15,7 +15,6 @@ async function loadMatches() {
       return;
     }
     
-    // Extract match date summary for the header from the first event date
     const firstDate = new Date(events[0].date);
     const optionsDate = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
     const formattedDateHeader = firstDate.toLocaleDateString('en-GB', optionsDate);
@@ -26,9 +25,8 @@ async function loadMatches() {
     const matches = events.map(event => {
       const matchId = event.id;
       const statusType = event.status.type;
-      const state = statusType.state; // "pre", "in", "post"
+      const state = statusType.state; 
       
-      // Format match date & time (e.g. "Sat 12 Sept · 15:00")
       const matchDateObj = new Date(event.date);
       const dayStr = matchDateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
       const timeStr = matchDateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -69,6 +67,24 @@ async function loadMatches() {
         statusText = "SCHEDULED";
       }
 
+      // Extract goal scorers if available in competition details
+      let goalsList = [];
+      if (competitions.details) {
+        competitions.details.forEach(detail => {
+          if (detail.scoringPlay) {
+            const scorerName = detail.athlete?.displayName || "Goal";
+            const clockTime = detail.clock?.displayValue || "";
+            const scoringTeam = detail.team?.id;
+            const isHome = scoringTeam === competitors.find(c => c.homeAway === "home")?.team?.id;
+            
+            goalsList.push({
+              text: `${scorerName} ${clockTime}`,
+              isHome: isHome
+            });
+          }
+        });
+      }
+
       return {
         id: matchId,
         teams: matchName,
@@ -79,6 +95,7 @@ async function loadMatches() {
         score: scoreStr,
         status: statusText,
         dateTime: dateTimeDisplay,
+        goals: goalsList,
         highlightUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}`,
         upvotes: 0,
         downvotes: 0
@@ -111,6 +128,20 @@ function renderMatches(matches) {
   matches.forEach(match => {
     const userVote = savedVotes[match.id] || 0;
 
+    let homeGoalsHtml = '';
+    let awayGoalsHtml = '';
+
+    if (match.goals && match.goals.length > 0) {
+      match.goals.forEach(g => {
+        const goalLine = `<div>⚽ ${g.text}</div>`;
+        if (g.isHome) {
+          homeGoalsHtml += goalLine;
+        } else {
+          awayGoalsHtml += goalLine;
+        }
+      });
+    }
+
     const card = document.createElement('div');
     card.classList.add('match-card');
 
@@ -122,14 +153,20 @@ function renderMatches(matches) {
       <div class="teams-container">
         <div class="team-side home">
           ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge">` : ''}
-          <span class="team-name">${match.homeTeam}</span>
+          <div class="team-info-block">
+            <span class="team-name">${match.homeTeam}</span>
+            <div class="scorers hidden" id="home-scorers-${match.id}">${homeGoalsHtml}</div>
+          </div>
         </div>
         <div class="center-area">
           <span class="vs-divider" id="vs-${match.id}">vs</span>
           <span class="score hidden" id="score-${match.id}">${match.score}</span>
         </div>
         <div class="team-side away">
-          <span class="team-name">${match.awayTeam}</span>
+          <div class="team-info-block">
+            <span class="team-name">${match.awayTeam}</span>
+            <div class="scorers hidden" id="away-scorers-${match.id}">${awayGoalsHtml}</div>
+          </div>
           ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge">` : ''}
         </div>
       </div>
@@ -153,10 +190,14 @@ function renderMatches(matches) {
 function toggleScore(event, matchId) {
   const scoreSpan = document.getElementById(`score-${matchId}`);
   const vsSpan = document.getElementById(`vs-${matchId}`);
+  const homeScorers = document.getElementById(`home-scorers-${matchId}`);
+  const awayScorers = document.getElementById(`away-scorers-${matchId}`);
   const btn = event.target;
   
   scoreSpan.classList.toggle('hidden');
   vsSpan.classList.toggle('hidden');
+  if (homeScorers) homeScorers.classList.toggle('hidden');
+  if (awayScorers) awayScorers.classList.toggle('hidden');
   
   btn.textContent = scoreSpan.classList.contains('hidden') ? 'Show score' : 'Hide score';
 }
