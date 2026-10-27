@@ -37,9 +37,30 @@ function generateRollingDates() {
 }
 
 async function initCalendar() {
-  // Always use rolling dates for cups/tournaments so the dropdown fills correctly
+  container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Scanning competition schedule...</p>';
+  
   if (currentLeague.toLowerCase().includes('uefa') || currentLeague === 'eng.fa') {
-    matchDates = generateRollingDates();
+    const rollingDates = generateRollingDates();
+    matchDates = [];
+
+    // Quickly scan the rolling window to find only dates with actual matches
+    for (const dateStr of rollingDates) {
+      try {
+        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard?dates=${dateStr}`);
+        const data = await res.json();
+        if (data.events && data.events.length > 0) {
+          matchDates.push(dateStr);
+        }
+      } catch (e) {
+        // Skip failed fetches silently during scan
+      }
+    }
+
+    // Fallback if none found in scan range
+    if (matchDates.length === 0) {
+      matchDates = [formatDateForParam(new Date())];
+    }
+
     setupInitialDateIndex();
     return;
   }
@@ -79,7 +100,7 @@ function setupInitialDateIndex() {
   if (matchDates.length > 0) {
     currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
     if (currentMatchDateIndex === -1) {
-      currentMatchDateIndex = matchDates.length > 0 ? matchDates.length - 1 : 0;
+      currentMatchDateIndex = matchDates.length - 1;
     }
   } else {
     matchDates = [todayStr];
