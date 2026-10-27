@@ -2,8 +2,8 @@ import json
 import os
 import urllib.request
 
-# Corrected Highlightly API endpoint base
-API_URL = "https://api.highlightly.net/v1/football/matches"
+# Corrected Highlightly Football API endpoint
+API_URL = "https://soccer.highlightly.net/matches"
 API_KEY = os.environ.get("HIGHLIGHTLY_API_KEY")
 
 def fetch_data():
@@ -11,22 +11,18 @@ def fetch_data():
         print("HIGHLIGHTLY_API_KEY environment variable not found.")
         return
 
-    # Highlightly usually accepts the API key as a query parameter or header depending on their portal. 
-    # Let's try passing it via header or query string. 
-    url = f"{API_URL}?apikey={API_KEY}"
-    
     headers = {
+        "x-rapidapi-key": API_KEY,
         "User-Agent": "SpoilerFreeFootball/1.0"
     }
     
-    req = urllib.request.Request(url, headers=headers)
+    req = urllib.request.Request(API_URL, headers=headers)
     
     try:
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
             
             matches = []
-            # Adjust key depending on whether they return a list or an object with a matches array
             raw_items = data if isinstance(data, list) else data.get("matches", data.get("data", []))
             
             for item in raw_items:
