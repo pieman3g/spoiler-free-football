@@ -67,30 +67,6 @@ async function loadMatches() {
         statusText = "SCHEDULED";
       }
 
-      // Extract goal scorers accurately from ESPN detail structures
-      let goalsList = [];
-      if (competitions.details) {
-        competitions.details.forEach(detail => {
-          if (detail.scoringPlay) {
-            let scorerName = "Goal";
-            if (detail.athletes && detail.athletes.length > 0) {
-              scorerName = detail.athletes[0].displayName || detail.athletes[0].shortName || "Goal";
-            } else if (detail.text) {
-              scorerName = detail.text;
-            }
-            
-            const clockTime = detail.clock?.displayValue ? `${detail.clock.displayValue}'` : "";
-            const scoringTeam = detail.team?.id;
-            const isHome = scoringTeam === competitors.find(c => c.homeAway === "home")?.team?.id;
-            
-            goalsList.push({
-              text: `${scorerName} ${clockTime}`,
-              isHome: isHome
-            });
-          }
-        });
-      }
-
       return {
         id: matchId,
         teams: matchName,
@@ -101,7 +77,6 @@ async function loadMatches() {
         score: scoreStr,
         status: statusText,
         dateTime: dateTimeDisplay,
-        goals: goalsList,
         highlightUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}`,
         upvotes: 0,
         downvotes: 0
@@ -131,22 +106,9 @@ function renderMatches(matches) {
 
   const savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
 
+  matches.matchList = matches; // reference
   matches.forEach(match => {
     const userVote = savedVotes[match.id] || 0;
-
-    let homeGoalsHtml = '';
-    let awayGoalsHtml = '';
-
-    if (match.goals && match.goals.length > 0) {
-      match.goals.forEach(g => {
-        const goalLine = `<div>⚽ ${g.text}</div>`;
-        if (g.isHome) {
-          homeGoalsHtml += goalLine;
-        } else {
-          awayGoalsHtml += goalLine;
-        }
-      });
-    }
 
     const card = document.createElement('div');
     card.classList.add('match-card');
@@ -161,7 +123,7 @@ function renderMatches(matches) {
           ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge">` : ''}
           <div class="team-info-block">
             <span class="team-name">${match.homeTeam}</span>
-            <div class="scorers hidden" id="home-scorers-${match.id}">${homeGoalsHtml}</div>
+            <div class="scorers hidden" id="home-scorers-${match.id}"></div>
           </div>
         </div>
         <div class="center-area">
@@ -171,7 +133,7 @@ function renderMatches(matches) {
         <div class="team-side away">
           <div class="team-info-block">
             <span class="team-name">${match.awayTeam}</span>
-            <div class="scorers hidden" id="away-scorers-${match.id}">${awayGoalsHtml}</div>
+            <div class="scorers hidden" id="away-scorers-${match.id}"></div>
           </div>
           ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge">` : ''}
         </div>
@@ -193,19 +155,63 @@ function renderMatches(matches) {
   });
 }
 
-function toggleScore(event, matchId) {
+async function toggleScore(event, matchId) {
   const scoreSpan = document.getElementById(`score-${matchId}`);
   const vsSpan = document.getElementById(`vs-${matchId}`);
   const homeScorers = document.getElementById(`home-scorers-${matchId}`);
   const awayScorers = document.getElementById(`away-scorers-${matchId}`);
   const btn = event.target;
   
+  const isHidden = scoreSpan.classList.contains('hidden');
+
   scoreSpan.classList.toggle('hidden');
   vsSpan.classList.toggle('hidden');
   if (homeScorers) homeScorers.classList.toggle('hidden');
   if (awayScorers) awayScorers.classList.toggle('hidden');
   
-  btn.textContent = scoreSpan.classList.contains('hidden') ? 'Show score' : 'Hide score';
+  btn.textContent = isHidden ? 'Hide score' : 'Show score';
+
+  // Fetch individual goalscorers on demand when revealing for the first time
+  if (isHidden && homeScorers.innerHTML === '') {
+    try {
+      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=${matchId}`);
+      const summaryData = await res.json();
+      
+      if (summaryData.details && summaryData.details.length > 0) {
+        let homeHtml = '';
+        let awayHtml = '';
+        
+        const homeTeamId = summaryData.boxscore?.teams?.[0]?.team?.id;
+
+        summaryData.details.forEach(detail => {
+          if (detail.scoringPlay) {
+            let playerName = "Goal";
+            if (detail.athletes && detail.athletes.length > 0) {
+              playerName = detail.athletes[0].displayName || detail.athletes[0].shortName;
+            } else if (detail.text) {
+              playerName = detail.text;
+            }
+            
+            const timeMin = detail.clock?.displayValue ? `${detail.clock.displayValue}'` : '';
+            const scoringTeamId = detail.team?.id;
+            const isHomeGoal = (scoringTeamId === homeTeamId);
+
+            const goalLine = `<div>⚽ ${playerName} ${timeMin}</div>`;
+            if (isHomeGoal) {
+              homeHtml += goalLine;
+            } else {
+              awayHtml += goalLine;
+            }
+          }
+        });
+
+        homeScorers.innerHTML = homeHtml;
+        awayScorers.innerHTML = awayHtml;
+      }
+    } catch (err) {
+      console.error("Could not load match summary details:", err);
+    }
+  }
 }
 
 function vote(matchId) {
