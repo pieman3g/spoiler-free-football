@@ -4,39 +4,99 @@ const dateSelect = document.getElementById('date-select');
 const prevBtn = document.getElementById('prev-date-btn');
 const nextBtn = document.getElementById('next-date-btn');
 
-let selectedDate = new Date();
+let matchDates = []; // Array of YYYYMMDD strings for dates with matches
+let currentMatchDateIndex = -1;
 
-function formatParamDate(date) {
+function formatDateForParam(date) {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
   return `${yyyy}${mm}${dd}`;
 }
 
-function initDatePicker() {
-  dateSelect.innerHTML = '';
-  
-  // Generate a range of 14 days around today (-7 days to +7 days)
-  for (let i = -7; i <= 7; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    
-    const option = document.createElement('option');
-    option.value = formatParamDate(d);
-    
-    const label = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-    option.textContent = i === 0 ? `Today (${label})` : label;
-    
-    dateSelect.appendChild(option);
-  }
-
-  const todayStr = formatParamDate(selectedDate);
-  dateSelect.value = todayStr;
+function parseParamDate(dateStr) {
+  const y = parseInt(dateStr.substring(0, 4));
+  const m = parseInt(dateStr.substring(4, 6)) - 1;
+  const d = parseInt(dateStr.substring(6, 8));
+  return new Date(y, m, d);
 }
 
-async function loadMatchesForDate(dateObj) {
-  const dateStr = formatParamDate(dateObj);
-  dateSelect.value = dateStr;
+// 1. Fetch available match calendar dates from ESPN
+async function initCalendar() {
+  try {
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard');
+    const data = await res.json();
+    
+    const calendarEntries = data.leagues?.[0]?.calendar || [];
+    
+    // Extract YYYYMMDD strings (handling both string dates and ISO formats)
+    matchDates = calendarEntries.map(entry => {
+      if (typeof entry === 'string') {
+        return entry.substring(0, 10).replace(/-/g, '');
+      } else if (entry.startDate) {
+        return entry.startDate.substring(0, 10).replace(/-/g, '');
+      }
+      return null;
+    }).filter(Boolean);
+
+    // Remove duplicates and sort chronologically
+    matchDates = [...new Set(matchDates)].sort();
+
+    const todayStr = formatDateForParam(new Date());
+
+    if (matchDates.length > 0) {
+      // Find today or the closest upcoming/past match day
+      currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
+      if (currentMatchDateIndex === -1) {
+        currentMatchDateIndex = matchDates.length - 1; // Fallback to last known match day
+      }
+      
+      populateDropdown();
+      loadMatchesForCurrentIndex();
+    } else {
+      // Fallback if calendar isn't provided in payload
+      matchDates = [todayStr];
+      currentMatchDateIndex = 0;
+      populateDropdown();
+      loadMatchesForCurrentIndex();
+    }
+  } catch (err) {
+    console.error("Error initializing calendar:", err);
+    loadFallbackMatches();
+  }
+}
+
+function populateDropdown() {
+  dateSelect.innerHTML = '';
+  const todayStr = formatDateForParam(new Date());
+
+  matchDates.forEach((dateStr, idx) => {
+    const d = parseParamDate(dateStr);
+    const option = document.createElement('option');
+    option.value = idx;
+
+    const formattedLabel = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    option.textContent = (dateStr === todayStr) ? `Today (${formattedLabel})` : formattedLabel;
+
+    dateSelect.appendChild(option);
+  });
+}
+
+function updateNavButtons() {
+  prevBtn.disabled = currentMatchDateIndex <= 0;
+  nextBtn.disabled = currentMatchDateIndex >= matchDates.length - 1;
+  prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
+  nextBtn.style.opacity = nextBtn.disabled ? "0.4" : "1";
+}
+
+async function loadMatchesForCurrentIndex() {
+  if (currentMatchDateIndex < 0 || currentMatchDateIndex >= matchDates.length) return;
+  
+  const dateStr = matchDates[currentMatchDateIndex];
+  dateSelect.value = currentMatchDateIndex;
+  updateNavButtons();
+
+  const dateObj = parseParamDate(dateStr);
 
   try {
     const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=${dateStr}`);
@@ -211,29 +271,28 @@ function vote(matchId) {
   let savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
   savedVotes[matchId] = savedVotes[matchId] === 1 ? 0 : 1;
   localStorage.setItem('spoiler_free_votes', JSON.stringify(savedVotes));
-  loadMatchesForDate(selectedDate);
+  loadMatchesForCurrentIndex();
 }
 
-// Event Listeners for Date Navigation
+// Event Listeners
 dateSelect.addEventListener('change', (e) => {
-  const val = e.target.value;
-  const y = parseInt(val.substring(0, 4));
-  const m = parseInt(val.substring(4, 6)) - 1;
-  const d = parseInt(val.substring(6, 8));
-  selectedDate = new Date(y, m, d);
-  loadMatchesForDate(selectedDate);
+  currentMatchDateIndex = parseInt(e.target.value);
+  loadMatchesForCurrentIndex();
 });
 
 prevBtn.addEventListener('click', () => {
-  selectedDate.setDate(selectedDate.getDate() - 1);
-  loadMatchesForDate(selectedDate);
+  if (currentMatchDateIndex > 0) {
+    currentMatchDateIndex--;
+    loadMatchesForCurrentIndex();
+  }
 });
 
 nextBtn.addEventListener('click', () => {
-  selectedDate.setDate(selectedDate.getDate() + 1);
-  loadMatchesForDate(selectedDate);
+  if (currentMatchDateIndex < matchDates.length - 1) {
+    currentMatchDateIndex++;
+    loadMatchesForCurrentIndex();
+  }
 });
 
-// Initialize
-initDatePicker();
-loadMatchesForDate(selectedDate);
+// Initialize Calendar
+initCalendar();
