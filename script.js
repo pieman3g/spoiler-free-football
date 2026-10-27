@@ -24,7 +24,7 @@ function parseParamDate(dateStr) {
   return new Date(y, m, d);
 }
 
-// Generate a rolling window of dates (e.g., 30 days back to 60 days forward) as a fallback for cups
+// Generate a rolling window of dates (30 days back to 60 days forward) for cup competitions
 function generateRollingDates() {
   const dates = [];
   const today = new Date();
@@ -36,7 +36,7 @@ function generateRollingDates() {
   return dates;
 }
 
-// 1. Fetch available match calendar dates for selected league
+// Fetch available match calendar dates for selected league
 async function initCalendar() {
   try {
     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
@@ -55,7 +55,7 @@ async function initCalendar() {
 
     matchDates = [...new Set(matchDates)].sort();
 
-    // If the calendar feed is empty or lacks range (common for cup tournaments), use a rolling window
+    // If the calendar feed is empty or lacks range (common for cup tournaments), use rolling window
     if (matchDates.length === 0) {
       matchDates = generateRollingDates();
     }
