@@ -21,7 +21,7 @@ jobs:
         run: python update_matches.py
 
       - name: Commit and push if matches.json changed
-        uses: stefanzweigel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Automated match data update [skip ci]"
           file_pattern: matches.json
