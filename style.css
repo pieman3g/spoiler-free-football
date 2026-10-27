@@ -64,7 +64,7 @@ header {
 .section-title {
     font-size: 1.1rem;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 12px;
     color: #ffffff;
 }
 
@@ -72,6 +72,37 @@ header {
     font-size: 0.85rem;
     color: #9ca3af;
     margin-bottom: 15px;
+}
+
+/* Competition Selector Styling */
+.competition-selector-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.selector-label {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.league-dropdown {
+    flex: 1;
+    background: #1e1e22;
+    border: 1px solid #3a3a3e;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+}
+
+.league-dropdown:hover {
+    background-color: #28282c;
 }
 
 /* Date Controls Styling */
