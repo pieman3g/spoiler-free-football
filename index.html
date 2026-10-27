@@ -1,13 +1,64 @@
-<div class="competition-selector-bar">
-    <label for="league-select" class="selector-label">League / Competition:</label>
-    <select id="league-select" class="league-dropdown">
-        <option value="eng.1" selected>🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-        <option value="eng.2">🏴󠁧󠁢󠁥󠁮󠁧󠁿 EFL Championship</option>
-        <option value="eng.fa">🏴󠁧󠁢󠁥󠁮󠁧󠁿 FA Cup</option>
-        <option value="uefa.champions">🇪🇺 Champions League</option>
-        <option value="uefa.europa">🇪🇺 Europa League</option>
-        <option value="esp.1">🇪🇸 La Liga</option>
-        <option value="ger.1">🇩🇪 Bundesliga</option>
-        <option value="ita.1">🇮🇹 Serie A</option>
-    </select>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiet Pitch · Spoiler-Free Football</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <span>⚽</span>
+                <span>Quiet Pitch</span>
+            </div>
+            <div class="spoiler-badge">Spoiler-Free Mode</div>
+        </header>
+
+        <div class="nav-tabs">
+            <a class="nav-tab active">Matches</a>
+            <a class="nav-tab">Saved</a>
+        </div>
+
+        <div class="section-title">Premier League</div>
+
+        <!-- Competition Selector -->
+        <div class="competition-selector-bar">
+            <label for="league-select" class="selector-label">League / Competition:</label>
+            <select id="league-select" class="league-dropdown">
+                <option value="eng.1" selected>Premier League</option>
+                <option value="eng.2">EFL Championship</option>
+                <option value="eng.fa">FA Cup</option>
+                <option value="uefa.champions">Champions League</option>
+                <option value="uefa.europa">Europa League</option>
+                <option value="esp.1">La Liga</option>
+                <option value="ger.1">Bundesliga</option>
+                <option value="ita.1">Serie A</option>
+            </select>
+        </div>
+
+        <!-- Date Controls Bar -->
+        <div class="date-picker-bar">
+            <button id="prev-date-btn" class="date-nav-btn" aria-label="Previous Match Day">&lt;</button>
+            <select id="date-select" class="date-dropdown">
+                <!-- Match dates populated dynamically via JavaScript -->
+            </select>
+            <button id="next-date-btn" class="date-nav-btn" aria-label="Next Match Day">&gt;</button>
+        </div>
+
+        <div class="section-subtitle">Loading matches...</div>
+
+        <!-- Dynamic Container for Match Cards -->
+        <div id="matches-container"></div>
+
+        <footer style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #2a2a2a; font-size: 0.85rem; color: #9ca3af;">
+            <a href="https://buymeacoffee.com/YOUR_USERNAME" target="_blank" rel="noopener noreferrer" style="color: #f59e0b; text-decoration: none; font-weight: 500;">
+                ☕ Buy me a coffee
+            </a>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
