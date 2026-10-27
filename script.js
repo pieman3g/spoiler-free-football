@@ -24,43 +24,23 @@ function parseParamDate(dateStr) {
   return new Date(y, m, d);
 }
 
-// Generate a rolling window of dates (30 days back to 60 days forward)
-function generateRollingDates() {
-  const dates = [];
-  const today = new Date();
-  for (let i = -30; i <= 60; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    dates.push(formatDateForParam(d));
-  }
-  return dates;
-}
-
+// Generate a smart rolling window (e.g., current week plus upcoming midweeks)
 async function initCalendar() {
-  container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Scanning competition schedule...</p>';
-  
   if (currentLeague.toLowerCase().includes('uefa') || currentLeague === 'eng.fa') {
-    const rollingDates = generateRollingDates();
-    matchDates = [];
-
-    // Quickly scan the rolling window to find only dates with actual matches
-    for (const dateStr of rollingDates) {
-      try {
-        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard?dates=${dateStr}`);
-        const data = await res.json();
-        if (data.events && data.events.length > 0) {
-          matchDates.push(dateStr);
-        }
-      } catch (e) {
-        // Skip failed fetches silently during scan
+    // Instant load: generate a tight 14-day window around today (past week + next week) 
+    // or check Tuesday/Wednesdays specifically to avoid network delays.
+    const dates = [];
+    const today = new Date();
+    for (let i = -7; i <= 21; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      // European cups mostly play on Tuesdays, Wednesdays, and Thursdays
+      const dayOfWeek = d.getDay();
+      if (dayOfWeek === 2 || dayOfWeek === 3 || dayOfWeek === 4 || i === 0) {
+        dates.push(formatDateForParam(d));
       }
     }
-
-    // Fallback if none found in scan range
-    if (matchDates.length === 0) {
-      matchDates = [formatDateForParam(new Date())];
-    }
-
+    matchDates = dates;
     setupInitialDateIndex();
     return;
   }
@@ -83,13 +63,13 @@ async function initCalendar() {
     matchDates = [...new Set(matchDates)].sort();
 
     if (matchDates.length === 0) {
-      matchDates = generateRollingDates();
+      matchDates = [formatDateForParam(new Date())];
     }
 
     setupInitialDateIndex();
   } catch (err) {
     console.error("Error initializing calendar:", err);
-    matchDates = generateRollingDates();
+    matchDates = [formatDateForParam(new Date())];
     setupInitialDateIndex();
   }
 }
