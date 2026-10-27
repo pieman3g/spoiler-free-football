@@ -2,12 +2,11 @@ const container = document.getElementById('matches-container');
 
 async function loadMatches() {
   try {
-    // Fetch directly from ESPN's public Premier League scoreboard endpoint
     const response = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard');
     if (!response.ok) throw new Error("Failed to fetch live data");
     
     const data = await response.json();
-    const events = data.get("events", []) || data.events || [];
+    const events = data.events || [];
     
     if (!events || events.length === 0) {
       container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">No matches scheduled for today.</p>';
@@ -17,8 +16,8 @@ async function loadMatches() {
     const matches = events.map(event => {
       const matchId = event.id;
       const statusType = event.status.type;
-      const state = statusType.state; // "pre", "in", "post"
-      const detail = statusType.detail; // e.g., "Scheduled", "45'+2", "FT"
+      const state = statusType.state; 
+      const detail = statusType.detail; 
       
       const competitions = event.competitions[0];
       const competitors = competitions.competitors;
@@ -70,8 +69,7 @@ async function loadMatches() {
     
     renderMatches(matches);
   } catch (error) {
-    console.error("Error loading live matches:", error);
-    // Fallback to loading your static matches.json if the direct API call fails
+    console.error("Error loading live matches, using fallback:", error);
     loadFallbackMatches();
   }
 }
