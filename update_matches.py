@@ -1,8 +1,9 @@
 import json
 import os
 import urllib.request
+import urllib.error
 
-# Corrected Highlightly Football API endpoint
+# Highlightly endpoint via RapidAPI/Gateway standard
 API_URL = "https://soccer.highlightly.net/matches"
 API_KEY = os.environ.get("HIGHLIGHTLY_API_KEY")
 
@@ -11,8 +12,10 @@ def fetch_data():
         print("HIGHLIGHTLY_API_KEY environment variable not found.")
         return
 
+    # Try standard RapidAPI header setup or Bearer token depending on subscription
     headers = {
         "x-rapidapi-key": API_KEY,
+        "x-rapidapi-host": "soccer.highlightly.net",
         "User-Agent": "SpoilerFreeFootball/1.0"
     }
     
@@ -45,6 +48,13 @@ def fetch_data():
                 
             print(f"Successfully updated matches.json with {len(matches)} matches.")
             
+    except urllib.error.HTTPError as e:
+        print(f"HTTP Error {e.code}: {e.reason}")
+        try:
+            error_body = e.read().decode()
+            print(f"Server response: {error_body}")
+        except:
+            pass
     except Exception as e:
         print(f"Error fetching from Highlightly API: {e}")
 
