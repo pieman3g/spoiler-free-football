@@ -24,6 +24,18 @@ function parseParamDate(dateStr) {
   return new Date(y, m, d);
 }
 
+// Generate a rolling window of dates (e.g., 30 days back to 60 days forward) as a fallback for cups
+function generateRollingDates() {
+  const dates = [];
+  const today = new Date();
+  for (let i = -30; i <= 60; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    dates.push(formatDateForParam(d));
+  }
+  return dates;
+}
+
 // 1. Fetch available match calendar dates for selected league
 async function initCalendar() {
   try {
@@ -43,6 +55,11 @@ async function initCalendar() {
 
     matchDates = [...new Set(matchDates)].sort();
 
+    // If the calendar feed is empty or lacks range (common for cup tournaments), use a rolling window
+    if (matchDates.length === 0) {
+      matchDates = generateRollingDates();
+    }
+
     const todayStr = formatDateForParam(new Date());
 
     if (matchDates.length > 0) {
@@ -61,7 +78,10 @@ async function initCalendar() {
     }
   } catch (err) {
     console.error("Error initializing calendar:", err);
-    loadFallbackMatches();
+    matchDates = generateRollingDates();
+    currentMatchDateIndex = matchDates.findIndex(d => d >= formatDateForParam(new Date())) || 0;
+    populateDropdown();
+    loadMatchesForCurrentIndex();
   }
 }
 
