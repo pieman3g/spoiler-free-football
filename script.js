@@ -171,7 +171,6 @@ async function toggleScore(event, matchId) {
   
   btn.textContent = isHidden ? 'Hide score' : 'Show score';
 
-  // Fetch match summary details to pull actual scorer text/descriptions
   if (isHidden && homeScorers.innerHTML === '') {
     try {
       const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=${matchId}`);
@@ -185,7 +184,6 @@ async function toggleScore(event, matchId) {
 
       details.forEach(detail => {
         if (detail.scoringPlay) {
-          // Use detail.text if available (e.g. "Alexander Isak 47'"), falling back to athlete name
           let goalText = "";
           if (detail.text) {
             goalText = detail.text;
@@ -209,7 +207,7 @@ async function toggleScore(event, matchId) {
         }
       });
 
-      homeScorers.innerHTML = homeHtml || '<span style="color:#6b7280;">No scorers listed</span>';
+      homeScorers.innerHTML = homeHtml;
       awayScorers.innerHTML = awayHtml;
     } catch (err) {
       console.error("Error fetching match summary details:", err);
