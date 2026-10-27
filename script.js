@@ -1,25 +1,60 @@
 const container = document.getElementById('matches-container');
 const subtitleEl = document.querySelector('.section-subtitle');
+const dateSelect = document.getElementById('date-select');
+const prevBtn = document.getElementById('prev-date-btn');
+const nextBtn = document.getElementById('next-date-btn');
 
-async function loadMatches() {
+let selectedDate = new Date();
+
+function formatParamDate(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}${mm}${dd}`;
+}
+
+function initDatePicker() {
+  dateSelect.innerHTML = '';
+  
+  // Generate a range of 14 days around today (-7 days to +7 days)
+  for (let i = -7; i <= 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    
+    const option = document.createElement('option');
+    option.value = formatParamDate(d);
+    
+    const label = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    option.textContent = i === 0 ? `Today (${label})` : label;
+    
+    dateSelect.appendChild(option);
+  }
+
+  const todayStr = formatParamDate(selectedDate);
+  dateSelect.value = todayStr;
+}
+
+async function loadMatchesForDate(dateObj) {
+  const dateStr = formatParamDate(dateObj);
+  dateSelect.value = dateStr;
+
   try {
-    const response = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard');
+    const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=${dateStr}`);
     if (!response.ok) throw new Error("Failed to fetch live data");
     
     const data = await response.json();
     const events = data.events || [];
     
+    const formattedHeaderDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    
     if (!events || events.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No matches scheduled for today.</p>';
-      if (subtitleEl) subtitleEl.textContent = "No matches scheduled";
+      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No matches scheduled for this date.</p>';
+      if (subtitleEl) subtitleEl.textContent = `0 matches on ${formattedHeaderDate}`;
       return;
     }
-    
-    const firstDate = new Date(events[0].date);
-    const optionsDate = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-    const formattedDateHeader = firstDate.toLocaleDateString('en-GB', optionsDate);
+
     if (subtitleEl) {
-      subtitleEl.textContent = `${events.length} matches on ${formattedDateHeader}`;
+      subtitleEl.textContent = `${events.length} match${events.length === 1 ? '' : 'es'} on ${formattedHeaderDate}`;
     }
 
     const matches = events.map(event => {
@@ -170,56 +205,35 @@ async function toggleScore(event, matchId) {
   if (awayScorers) awayScorers.classList.toggle('hidden');
   
   btn.textContent = isHidden ? 'Hide score' : 'Show score';
-
-  if (isHidden && homeScorers.innerHTML === '') {
-    try {
-      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=${matchId}`);
-      const data = await res.json();
-      
-      const details = data.details || [];
-      let homeHtml = '';
-      let awayHtml = '';
-
-      const homeTeamId = data.boxscore?.teams?.[0]?.team?.id || data.header?.competitions?.[0]?.competitors?.find(c => c.homeAway === 'home')?.team?.id;
-
-      details.forEach(detail => {
-        if (detail.scoringPlay) {
-          let goalText = "";
-          if (detail.text) {
-            goalText = detail.text;
-          } else if (detail.athletes && detail.athletes.length > 0) {
-            const name = detail.athletes[0].displayName || detail.athletes[0].shortName;
-            const time = detail.clock?.displayValue ? `${detail.clock.displayValue}'` : '';
-            goalText = `${name} ${time}`;
-          } else {
-            goalText = "Goal";
-          }
-
-          const scoringTeamId = detail.team?.id;
-          const isHome = (scoringTeamId === homeTeamId);
-
-          const goalLine = `<div>⚽ ${goalText}</div>`;
-          if (isHome) {
-            homeHtml += goalLine;
-          } else {
-            awayHtml += goalLine;
-          }
-        }
-      });
-
-      homeScorers.innerHTML = homeHtml;
-      awayScorers.innerHTML = awayHtml;
-    } catch (err) {
-      console.error("Error fetching match summary details:", err);
-    }
-  }
 }
 
 function vote(matchId) {
   let savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
   savedVotes[matchId] = savedVotes[matchId] === 1 ? 0 : 1;
   localStorage.setItem('spoiler_free_votes', JSON.stringify(savedVotes));
-  loadMatches();
+  loadMatchesForDate(selectedDate);
 }
 
-loadMatches();
+// Event Listeners for Date Navigation
+dateSelect.addEventListener('change', (e) => {
+  const val = e.target.value;
+  const y = parseInt(val.substring(0, 4));
+  const m = parseInt(val.substring(4, 6)) - 1;
+  const d = parseInt(val.substring(6, 8));
+  selectedDate = new Date(y, m, d);
+  loadMatchesForDate(selectedDate);
+});
+
+prevBtn.addEventListener('click', () => {
+  selectedDate.setDate(selectedDate.getDate() - 1);
+  loadMatchesForDate(selectedDate);
+});
+
+nextBtn.addEventListener('click', () => {
+  selectedDate.setDate(selectedDate.getDate() + 1);
+  loadMatchesForDate(selectedDate);
+});
+
+// Initialize
+initDatePicker();
+loadMatchesForDate(selectedDate);
