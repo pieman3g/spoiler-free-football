@@ -33,11 +33,29 @@ function renderMatches(matches) {
     const row = document.createElement('div');
     row.classList.add('match-row');
 
+    // Build team display with badges if available, falling back to match.teams string
+    let teamsHtml = '';
+    if (match.homeTeam && match.awayTeam) {
+      teamsHtml = `
+        <div class="team-group">
+          ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge" width="22" height="22">` : ''}
+          <span>${match.homeTeam}</span>
+        </div>
+        <span class="vs-text">vs</span>
+        <div class="team-group">
+          ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge" width="22" height="22">` : ''}
+          <span>${match.awayTeam}</span>
+        </div>
+      `;
+    } else {
+      teamsHtml = `<span>${match.teams}</span>`;
+    }
+
     row.innerHTML = `
       <div class="match-meta">
         <span style="color: #6c757d; font-weight: bold;">${match.status || 'FT'}</span>
       </div>
-      <div class="match-teams">${match.teams}</div>
+      <div class="match-teams">${teamsHtml}</div>
       <div>
         ${match.highlightUrl && match.highlightUrl !== '#' 
           ? `<a href="${match.highlightUrl}" target="_blank" rel="noopener noreferrer" class="highlight-btn">▶ Highlights</a>` 
