@@ -24,20 +24,29 @@ function parseParamDate(dateStr) {
   return new Date(y, m, d);
 }
 
-// Generate a fallback rolling window of dates if needed
-function generateRollingDates() {
-  const dates = [];
-  const today = new Date();
-  for (let i = -15; i <= 30; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    dates.push(formatDateForParam(d));
-  }
-  return dates;
-}
-
 async function initCalendar() {
   try {
+    // For UEFA and FA Cup, ESPN doesn't provide a calendar array in the main scoreboard.
+    // Instead of scanning every single day, we check the current game week window (Tue/Wed/Thu).
+    if (currentLeague.toLowerCase().includes('uefa') || currentLeague === 'eng.fa') {
+      matchDates = [];
+      const today = new Date();
+      
+      // Look 14 days back and 45 days forward for midweeks (Tue, Wed, Thu)
+      for (let i = -14; i <= 45; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const dayOfWeek = d.getDay();
+        // Champions League/Europa League primarily play on Tuesdays (2) and Wednesdays (3), sometimes Thursdays (4)
+        if (dayOfWeek === 2 || dayOfWeek === 3 || dayOfWeek === 4) {
+          matchDates.push(formatDateForParam(d));
+        }
+      }
+
+      setupInitialDateIndex();
+      return;
+    }
+
     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
     const data = await res.json();
     
@@ -54,15 +63,14 @@ async function initCalendar() {
 
     matchDates = [...new Set(matchDates)].sort();
 
-    // If the calendar feed is empty or returns too few entries for a cup, fallback to a tight 30-day window around today
     if (matchDates.length === 0) {
-      matchDates = generateRollingDates();
+      matchDates = [formatDateForParam(new Date())];
     }
 
     setupInitialDateIndex();
   } catch (err) {
     console.error("Error initializing calendar:", err);
-    matchDates = generateRollingDates();
+    matchDates = [formatDateForParam(new Date())];
     setupInitialDateIndex();
   }
 }
