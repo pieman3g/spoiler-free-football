@@ -1,34 +1,47 @@
 const container = document.getElementById('matches-container');
 
-let matches = JSON.parse(localStorage.getItem('spoiler_free_matches')) || [
-  { id: 1, teams: "Arsenal vs Liverpool", score: "2 - 1", status: "LIVE 82'", upvotes: 142, downvotes: 4 },
-  { id: 2, teams: "Real Madrid vs Barcelona", score: "3 - 3", status: "FT", upvotes: 215, downvotes: 14 },
-  { id: 3, teams: "Manchester City vs Chelsea", score: "1 - 1", status: "LIVE 65'", upvotes: 189, downvotes: 11 },
-  { id: 4, teams: "Bayern Munich vs Dortmund", score: "4 - 0", status: "FT", upvotes: 98, downvotes: 5 }
-];
+async function loadMatches() {
+  try {
+    const response = await fetch('matches.json');
+    if (!response.ok) throw new Error("matches.json not found yet");
+    const matches = await response.json();
+    renderMatches(matches);
+  } catch (error) {
+    console.error("Error loading matches:", error);
+    container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">Fetching latest match data... Check back in a couple minutes!</p>';
+  }
+}
 
-function renderMatches() {
+function renderMatches(matches) {
   container.innerHTML = '';
 
+  const savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
+
   matches.forEach(match => {
+    const userVote = savedVotes[match.id] || 0;
+    const currentUpvotes = (match.upvotes || 0) + (userVote === 1 ? 1 : 0);
+    const currentDownvotes = (match.downvotes || 0) + (userVote === -1 ? 1 : 0);
+
     const row = document.createElement('div');
     row.classList.add('match-row');
 
-    const isLive = match.status.includes('LIVE');
-    const statusColor = isLive ? '#e63946' : '#6c757d';
-
     row.innerHTML = `
       <div class="match-meta">
-        <span style="color: ${statusColor}; font-weight: bold;">${isLive ? '● ' : ''}${match.status}</span>
+        <span style="color: #6c757d; font-weight: bold;">${match.status || 'FT'}</span>
       </div>
       <div class="match-teams">${match.teams}</div>
+      <div>
+        ${match.highlightUrl && match.highlightUrl !== '#' 
+          ? `<a href="${match.highlightUrl}" target="_blank" rel="noopener noreferrer" class="highlight-btn">▶ Highlights</a>` 
+          : '<span style="color:#adb5bd; font-size:0.85rem;">No Video</span>'}
+      </div>
       <div class="score-area">
         <span class="score hidden" id="score-${match.id}">${match.score}</span>
         <button class="reveal-btn" onclick="toggleScore(${match.id})">Reveal</button>
       </div>
       <div class="vote-section">
-        <button class="vote-btn" onclick="vote(${match.id}, 'up')" title="Worth Watching">👍 <span>${match.upvotes}</span></button>
-        <button class="vote-btn" onclick="vote(${match.id}, 'down')" title="Not Worth Watching">👎 <span>${match.downvotes}</span></button>
+        <button class="vote-btn" onclick="vote(${match.id}, 'up')">👍 <span>${currentUpvotes}</span></button>
+        <button class="vote-btn" onclick="vote(${match.id}, 'down')">👎 <span>${currentDownvotes}</span></button>
       </div>
     `;
 
@@ -41,21 +54,20 @@ function toggleScore(matchId) {
   const btn = event.target;
   
   scoreSpan.classList.toggle('hidden');
-  
-  if (scoreSpan.classList.contains('hidden')) {
-    btn.textContent = 'Reveal';
-  } else {
-    btn.textContent = 'Hide';
-  }
+  btn.textContent = scoreSpan.classList.contains('hidden') ? 'Reveal' : 'Hide';
 }
 
 function vote(matchId, type) {
-  const match = matches.find(m => m.id === matchId);
-  if (type === 'up') match.upvotes++;
-  if (type === 'down') match.downvotes++;
+  let savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
   
-  localStorage.setItem('spoiler_free_matches', JSON.stringify(matches));
-  renderMatches();
+  if (type === 'up') {
+    savedVotes[matchId] = savedVotes[matchId] === 1 ? 0 : 1;
+  } else if (type === 'down') {
+    savedVotes[matchId] = savedVotes[matchId] === -1 ? 0 : -1;
+  }
+
+  localStorage.setItem('spoiler_free_votes', JSON.stringify(savedVotes));
+  loadMatches();
 }
 
-renderMatches();
+loadMatches();
