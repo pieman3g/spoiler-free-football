@@ -9,6 +9,7 @@ const nextBtn = document.getElementById('next-date-btn');
 let currentLeague = 'eng.1'; // Default to Premier League
 let matchDates = [];
 let currentMatchDateIndex = -1;
+let globalSpoilersRevealed = false;
 
 function formatDateForParam(date) {
   const yyyy = date.getFullYear();
@@ -26,18 +27,14 @@ function parseParamDate(dateStr) {
 
 async function initCalendar() {
   try {
-    // For UEFA and FA Cup, ESPN doesn't provide a calendar array in the main scoreboard.
-    // Instead of scanning every single day, we check the current game week window (Tue/Wed/Thu).
     if (currentLeague.toLowerCase().includes('uefa') || currentLeague === 'eng.fa') {
       matchDates = [];
       const today = new Date();
       
-      // Look 14 days back and 45 days forward for midweeks (Tue, Wed, Thu)
       for (let i = -14; i <= 45; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
         const dayOfWeek = d.getDay();
-        // Champions League/Europa League primarily play on Tuesdays (2) and Wednesdays (3), sometimes Thursdays (4)
         if (dayOfWeek === 2 || dayOfWeek === 3 || dayOfWeek === 4) {
           matchDates.push(formatDateForParam(d));
         }
@@ -243,17 +240,17 @@ function renderMatches(matches) {
           ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge">` : ''}
           <div class="team-info-block">
             <span class="team-name">${match.homeTeam}</span>
-            <div class="scorers hidden" id="home-scorers-${match.id}"></div>
+            <div class="scorers ${globalSpoilersRevealed ? '' : 'hidden'}" id="home-scorers-${match.id}"></div>
           </div>
         </div>
         <div class="center-area">
-          <span class="vs-divider" id="vs-${match.id}">vs</span>
-          <span class="score hidden" id="score-${match.id}">${match.score}</span>
+          <span class="vs-divider ${globalSpoilersRevealed ? 'hidden' : ''}" id="vs-${match.id}">vs</span>
+          <span class="score ${globalSpoilersRevealed ? '' : 'hidden'}" id="score-${match.id}">${match.score}</span>
         </div>
         <div class="team-side away">
           <div class="team-info-block">
             <span class="team-name">${match.awayTeam}</span>
-            <div class="scorers hidden" id="away-scorers-${match.id}"></div>
+            <div class="scorers ${globalSpoilersRevealed ? '' : 'hidden'}" id="away-scorers-${match.id}"></div>
           </div>
           ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge">` : ''}
         </div>
@@ -265,7 +262,7 @@ function renderMatches(matches) {
             : '<span style="color:#6b7280; font-size:0.8rem;">No Video</span>'}
         </div>
         <div class="card-actions">
-          <button class="reveal-btn" onclick="toggleScore(event, ${match.id})">Show score</button>
+          <button class="reveal-btn" onclick="toggleScore(event, ${match.id})">${globalSpoilersRevealed ? 'Hide score' : 'Show score'}</button>
           <button class="vote-btn ${userVote === 1 ? 'active' : ''}" onclick="vote(${match.id})">★ Save</button>
         </div>
       </div>
@@ -297,6 +294,69 @@ function vote(matchId) {
   savedVotes[matchId] = savedVotes[matchId] === 1 ? 0 : 1;
   localStorage.setItem('spoiler_free_votes', JSON.stringify(savedVotes));
   loadMatchesForCurrentIndex();
+}
+
+// Global Spoiler Modal & Toggle Handlers
+function handleGlobalSpoilerClick() {
+  if (globalSpoilersRevealed) {
+    globalSpoilersRevealed = false;
+    document.getElementById('spoiler-state-text').textContent = 'hidden';
+    document.getElementById('global-spoiler-toggle').classList.remove('active');
+    updateAllScoresVisibility(false);
+  } else {
+    const dontAsk = localStorage.getItem('spoiler_dont_ask') === 'true';
+    if (dontAsk) {
+      revealAllScores();
+    } else {
+      document.getElementById('spoiler-modal').classList.remove('hidden');
+    }
+  }
+}
+
+function closeSpoilerModal() {
+  document.getElementById('spoiler-modal').classList.add('hidden');
+}
+
+function confirmRevealAll() {
+  const dontAskChecked = document.getElementById('dont-ask-checkbox').checked;
+  if (dontAskChecked) {
+    localStorage.setItem('spoiler_dont_ask', 'true');
+  }
+  closeSpoilerModal();
+  revealAllScores();
+}
+
+function revealAllScores() {
+  globalSpoilersRevealed = true;
+  document.getElementById('spoiler-state-text').textContent = 'shown';
+  document.getElementById('global-spoiler-toggle').classList.add('active');
+  updateAllScoresVisibility(true);
+}
+
+function updateAllScoresVisibility(show) {
+  const scoreSpans = document.querySelectorAll('.score');
+  const vsSpans = document.querySelectorAll('.vs-divider');
+  const scorersBlocks = document.querySelectorAll('.scorers');
+  const revealBtns = document.querySelectorAll('.reveal-btn');
+
+  scoreSpans.forEach(el => {
+    if (show) el.classList.remove('hidden');
+    else el.classList.add('hidden');
+  });
+
+  vsSpans.forEach(el => {
+    if (show) el.classList.add('hidden');
+    else el.classList.remove('hidden');
+  });
+
+  scorersBlocks.forEach(el => {
+    if (show) el.classList.remove('hidden');
+    else el.classList.add('hidden');
+  });
+
+  revealBtns.forEach(btn => {
+    btn.textContent = show ? 'Hide score' : 'Show score';
+  });
 }
 
 // Event Listeners
