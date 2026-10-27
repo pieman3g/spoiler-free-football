@@ -24,27 +24,19 @@ function parseParamDate(dateStr) {
   return new Date(y, m, d);
 }
 
-// Generate a smart rolling window (e.g., current week plus upcoming midweeks)
-async function initCalendar() {
-  if (currentLeague.toLowerCase().includes('uefa') || currentLeague === 'eng.fa') {
-    // Instant load: generate a tight 14-day window around today (past week + next week) 
-    // or check Tuesday/Wednesdays specifically to avoid network delays.
-    const dates = [];
-    const today = new Date();
-    for (let i = -7; i <= 21; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      // European cups mostly play on Tuesdays, Wednesdays, and Thursdays
-      const dayOfWeek = d.getDay();
-      if (dayOfWeek === 2 || dayOfWeek === 3 || dayOfWeek === 4 || i === 0) {
-        dates.push(formatDateForParam(d));
-      }
-    }
-    matchDates = dates;
-    setupInitialDateIndex();
-    return;
+// Generate a fallback rolling window of dates if needed
+function generateRollingDates() {
+  const dates = [];
+  const today = new Date();
+  for (let i = -15; i <= 30; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    dates.push(formatDateForParam(d));
   }
+  return dates;
+}
 
+async function initCalendar() {
   try {
     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
     const data = await res.json();
@@ -62,14 +54,15 @@ async function initCalendar() {
 
     matchDates = [...new Set(matchDates)].sort();
 
+    // If the calendar feed is empty or returns too few entries for a cup, fallback to a tight 30-day window around today
     if (matchDates.length === 0) {
-      matchDates = [formatDateForParam(new Date())];
+      matchDates = generateRollingDates();
     }
 
     setupInitialDateIndex();
   } catch (err) {
     console.error("Error initializing calendar:", err);
-    matchDates = [formatDateForParam(new Date())];
+    matchDates = generateRollingDates();
     setupInitialDateIndex();
   }
 }
