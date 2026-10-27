@@ -2,13 +2,21 @@ const container = document.getElementById('matches-container');
 
 async function loadMatches() {
   try {
-    const response = await fetch('matches.json');
-    if (!response.ok) throw new Error("matches.json not found yet");
+    // Add a timestamp parameter (?t=...) to prevent browser caching of matches.json
+    const response = await fetch('matches.json?t=' + new Date().getTime());
+    if (!response.ok) throw new Error("matches.json not found");
+    
     const matches = await response.json();
+    
+    if (!matches || matches.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">No matches available right now. Check back soon!</p>';
+      return;
+    }
+    
     renderMatches(matches);
   } catch (error) {
     console.error("Error loading matches:", error);
-    container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">Fetching latest match data... Check back in a couple minutes!</p>';
+    container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 40px;">Waiting for automation script to generate matches.json...</p>';
   }
 }
 
@@ -40,8 +48,8 @@ function renderMatches(matches) {
         <button class="reveal-btn" onclick="toggleScore(${match.id})">Reveal</button>
       </div>
       <div class="vote-section">
-        <button class="vote-btn" onclick="vote(${match.id}, 'up')">👍 <span>${currentUpvotes}</span></button>
-        <button class="vote-btn" onclick="vote(${match.id}, 'down')">👎 <span>${currentDownvotes}</span></button>
+        <button class="vote-btn ${userVote === 1 ? 'active' : ''}" onclick="vote(${match.id}, 'up')">👍 <span>${currentUpvotes}</span></button>
+        <button class="vote-btn ${userVote === -1 ? 'active' : ''}" onclick="vote(${match.id}, 'down')">👎 <span>${currentDownvotes}</span></button>
       </div>
     `;
 
