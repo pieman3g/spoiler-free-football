@@ -1,4 +1,5 @@
 const container = document.getElementById('matches-container');
+const subtitleEl = document.querySelector('.section-subtitle');
 
 async function loadMatches() {
   try {
@@ -10,15 +11,29 @@ async function loadMatches() {
     
     if (!events || events.length === 0) {
       container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No matches scheduled for today.</p>';
+      if (subtitleEl) subtitleEl.textContent = "No matches scheduled";
       return;
     }
     
+    // Extract match date summary for the header from the first event date
+    const firstDate = new Date(events[0].date);
+    const optionsDate = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    const formattedDateHeader = firstDate.toLocaleDateString('en-GB', optionsDate);
+    if (subtitleEl) {
+      subtitleEl.textContent = `${events.length} matches on ${formattedDateHeader}`;
+    }
+
     const matches = events.map(event => {
       const matchId = event.id;
       const statusType = event.status.type;
-      const state = statusType.state; 
-      const detail = statusType.detail; 
+      const state = statusType.state; // "pre", "in", "post"
       
+      // Format match date & time (e.g. "Sat 12 Sept · 15:00")
+      const matchDateObj = new Date(event.date);
+      const dayStr = matchDateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      const timeStr = matchDateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const dateTimeDisplay = `${dayStr} · ${timeStr}`;
+
       const competitions = event.competitions[0];
       const competitors = competitions.competitors;
       
@@ -42,14 +57,16 @@ async function loadMatches() {
       const matchName = `${homeName} vs ${awayName}`;
       
       let scoreStr = "vs";
-      let statusDisplay = detail;
+      let statusText = "UPCOMING";
       
       if (state === "in") {
         scoreStr = `${homeScore} - ${awayScore}`;
-        statusDisplay = `LIVE ${detail}`;
+        statusText = `LIVE ${event.status.type.detail || ''}`;
       } else if (state === "post") {
         scoreStr = `${homeScore} - ${awayScore}`;
-        statusDisplay = "FULL TIME";
+        statusText = "FULL TIME";
+      } else {
+        statusText = "SCHEDULED";
       }
 
       return {
@@ -60,7 +77,8 @@ async function loadMatches() {
         homeLogo: homeLogo,
         awayLogo: awayLogo,
         score: scoreStr,
-        status: statusDisplay,
+        status: statusText,
+        dateTime: dateTimeDisplay,
         highlightUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}`,
         upvotes: 0,
         downvotes: 0
@@ -78,6 +96,7 @@ async function loadFallbackMatches() {
   try {
     const response = await fetch('matches.json?t=' + new Date().getTime());
     const matches = await response.json();
+    if (subtitleEl) subtitleEl.textContent = `${matches.length} matches found`;
     renderMatches(matches);
   } catch (err) {
     container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Unable to load matches.</p>';
@@ -97,7 +116,8 @@ function renderMatches(matches) {
 
     card.innerHTML = `
       <div class="card-top">
-        <span class="status">${match.status || 'FULL TIME'}</span>
+        <span class="status">${match.status}</span>
+        <span>${match.dateTime}</span>
       </div>
       <div class="teams-container">
         <div class="team-side home">
