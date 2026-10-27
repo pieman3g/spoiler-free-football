@@ -1,44 +1,60 @@
 import json
-import os
 import urllib.request
-import urllib.error
 
-# Highlightly endpoint via RapidAPI/Gateway standard
-API_URL = "https://soccer.highlightly.net/matches"
-API_KEY = os.environ.get("HIGHLIGHTLY_API_KEY")
+# ESPN's public unauthenticated Premier League scoreboard endpoint
+API_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard"
 
 def fetch_data():
-    if not API_KEY:
-        print("HIGHLIGHTLY_API_KEY environment variable not found.")
-        return
-
-    # Try standard RapidAPI header setup or Bearer token depending on subscription
-    headers = {
-        "x-rapidapi-key": API_KEY,
-        "x-rapidapi-host": "soccer.highlightly.net",
-        "User-Agent": "SpoilerFreeFootball/1.0"
-    }
-    
-    req = urllib.request.Request(API_URL, headers=headers)
+    req = urllib.request.Request(
+        API_URL, 
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    )
     
     try:
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
             
             matches = []
-            raw_items = data if isinstance(data, list) else data.get("matches", data.get("data", []))
+            events = data.get("events", [])
             
-            for item in raw_items:
-                home = item.get("homeTeam", {}).get("name", item.get("home", "Home"))
-                away = item.get("awayTeam", {}).get("name", item.get("away", "Away"))
+            for event in events:
+                match_id = event.get("id")
+                match_name = event.get("name", "Match") # e.g., "Arsenal vs Chelsea"
+                status_type = event.get("status", {}).get("type", {})
                 
+                # State can be 'pre' (upcoming), 'in' (live), 'post' (finished)
+                state = status_type.get("state", "pre")
+                detail = status_type.get("detail", "Scheduled")
+                
+                competitions = event.get("competitions", [{}])[0]
+                competitors = competitions.get("competitors", [])
+                
+                home_score = "0"
+                away_score = "0"
+                
+                for comp in competitors:
+                    if comp.get("homeAway") == "home":
+                        home_score = comp.get("score", "0")
+                    elif comp.get("homeAway") == "away":
+                        away_score = comp.get("score", "0")
+                
+                if state == "pre":
+                    score_str = "vs"
+                    status_display = detail
+                elif state == "in":
+                    score_str = f"{home_score} - {away_score}"
+                    status_display = f"LIVE {detail}"
+                else:
+                    score_str = f"{home_score} - {away_score}"
+                    status_display = "FT"
+
                 matches.append({
-                    "id": item.get("id", 1),
-                    "teams": f"{home} vs {away}",
-                    "date": item.get("date", ""),
-                    "score": item.get("score", "FT"),
-                    "status": item.get("status", "FT"),
-                    "highlightUrl": item.get("video_url", item.get("highlights", "#")),
+                    "id": match_id,
+                    "teams": match_name,
+                    "date": event.get("date", "")[:10],
+                    "score": score_str,
+                    "status": status_display,
+                    "highlightUrl": f"https://www.youtube.com/results?search_query={urllib.parse.quote(match_name + ' highlights')}",
                     "upvotes": 0,
                     "downvotes": 0
                 })
@@ -48,15 +64,8 @@ def fetch_data():
                 
             print(f"Successfully updated matches.json with {len(matches)} matches.")
             
-    except urllib.error.HTTPError as e:
-        print(f"HTTP Error {e.code}: {e.reason}")
-        try:
-            error_body = e.read().decode()
-            print(f"Server response: {error_body}")
-        except:
-            pass
     except Exception as e:
-        print(f"Error fetching from Highlightly API: {e}")
+        print(f"Error fetching ESPN data: {e}")
 
 if __name__ == "__main__":
     fetch_data()
