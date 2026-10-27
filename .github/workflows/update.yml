@@ -1,15 +1,13 @@
 name: Update Football Highlights Data
 
 on:
+  workflow_dispatch: # Keeps manual trigger available
   schedule:
-    - cron: '0 * * * *' # Runs every hour on the hour
-  workflow_dispatch: # Allows manual trigger anytime from the Actions tab
+    - cron: '0 */2 * * *' # Automatically runs every 2 hours
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,12 +18,10 @@ jobs:
           python-version: '3.10'
 
       - name: Run fetch script
-        env:
-          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
         run: python update_matches.py
 
       - name: Commit and push if matches.json changed
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweigel/git-auto-commit-action@v5
         with:
           commit_message: "Automated match data update [skip ci]"
           file_pattern: matches.json
