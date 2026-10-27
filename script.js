@@ -1,10 +1,13 @@
 const container = document.getElementById('matches-container');
 const subtitleEl = document.querySelector('.section-subtitle');
+const titleEl = document.querySelector('.section-title');
 const dateSelect = document.getElementById('date-select');
+const leagueSelect = document.getElementById('league-select');
 const prevBtn = document.getElementById('prev-date-btn');
 const nextBtn = document.getElementById('next-date-btn');
 
-let matchDates = []; // Array of YYYYMMDD strings for dates with matches
+let currentLeague = 'eng.1'; // Default to Premier League
+let matchDates = [];
 let currentMatchDateIndex = -1;
 
 function formatDateForParam(date) {
@@ -21,15 +24,14 @@ function parseParamDate(dateStr) {
   return new Date(y, m, d);
 }
 
-// 1. Fetch available match calendar dates from ESPN
+// 1. Fetch available match calendar dates for selected league
 async function initCalendar() {
   try {
-    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard');
+    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
     const data = await res.json();
     
     const calendarEntries = data.leagues?.[0]?.calendar || [];
     
-    // Extract YYYYMMDD strings (handling both string dates and ISO formats)
     matchDates = calendarEntries.map(entry => {
       if (typeof entry === 'string') {
         return entry.substring(0, 10).replace(/-/g, '');
@@ -39,22 +41,19 @@ async function initCalendar() {
       return null;
     }).filter(Boolean);
 
-    // Remove duplicates and sort chronologically
     matchDates = [...new Set(matchDates)].sort();
 
     const todayStr = formatDateForParam(new Date());
 
     if (matchDates.length > 0) {
-      // Find today or the closest upcoming/past match day
       currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
       if (currentMatchDateIndex === -1) {
-        currentMatchDateIndex = matchDates.length - 1; // Fallback to last known match day
+        currentMatchDateIndex = matchDates.length - 1;
       }
       
       populateDropdown();
       loadMatchesForCurrentIndex();
     } else {
-      // Fallback if calendar isn't provided in payload
       matchDates = [todayStr];
       currentMatchDateIndex = 0;
       populateDropdown();
@@ -99,7 +98,7 @@ async function loadMatchesForCurrentIndex() {
   const dateObj = parseParamDate(dateStr);
 
   try {
-    const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=${dateStr}`);
+    const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard?dates=${dateStr}`);
     if (!response.ok) throw new Error("Failed to fetch live data");
     
     const data = await response.json();
@@ -181,7 +180,7 @@ async function loadMatchesForCurrentIndex() {
     
     renderMatches(matches);
   } catch (error) {
-    console.error("Error loading live matches, using fallback:", error);
+    console.error("Error loading live matches:", error);
     loadFallbackMatches();
   }
 }
@@ -199,7 +198,6 @@ async function loadFallbackMatches() {
 
 function renderMatches(matches) {
   container.innerHTML = '';
-
   const savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
 
   matches.forEach(match => {
@@ -250,7 +248,7 @@ function renderMatches(matches) {
   });
 }
 
-async function toggleScore(event, matchId) {
+function toggleScore(event, matchId) {
   const scoreSpan = document.getElementById(`score-${matchId}`);
   const vsSpan = document.getElementById(`vs-${matchId}`);
   const homeScorers = document.getElementById(`home-scorers-${matchId}`);
@@ -275,6 +273,15 @@ function vote(matchId) {
 }
 
 // Event Listeners
+if (leagueSelect) {
+  leagueSelect.addEventListener('change', (e) => {
+    currentLeague = e.target.value;
+    const selectedText = e.target.options[e.target.selectedIndex].text;
+    if (titleEl) titleEl.textContent = selectedText;
+    initCalendar();
+  });
+}
+
 dateSelect.addEventListener('change', (e) => {
   currentMatchDateIndex = parseInt(e.target.value);
   loadMatchesForCurrentIndex();
@@ -294,5 +301,5 @@ nextBtn.addEventListener('click', () => {
   }
 });
 
-// Initialize Calendar
+// Initialize Calendar on initial load
 initCalendar();
