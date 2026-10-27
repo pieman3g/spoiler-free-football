@@ -24,7 +24,7 @@ function parseParamDate(dateStr) {
   return new Date(y, m, d);
 }
 
-// Generate a rolling window of dates (30 days back to 60 days forward) for cup competitions
+// Generate a rolling window of dates (30 days back to 60 days forward)
 function generateRollingDates() {
   const dates = [];
   const today = new Date();
@@ -36,9 +36,15 @@ function generateRollingDates() {
   return dates;
 }
 
-// Fetch available match calendar dates for selected league
 async function initCalendar() {
   try {
+    // For cup competitions, use rolling date windows because their calendar feeds are structured differently
+    if (currentLeague.startsWith('uefa.') || currentLeague === 'eng.fa') {
+      matchDates = generateRollingDates();
+      setupInitialDateIndex();
+      return;
+    }
+
     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
     const data = await res.json();
     
@@ -55,34 +61,37 @@ async function initCalendar() {
 
     matchDates = [...new Set(matchDates)].sort();
 
-    // If the calendar feed is empty or lacks range (common for cup tournaments), use rolling window
     if (matchDates.length === 0) {
       matchDates = generateRollingDates();
     }
 
-    const todayStr = formatDateForParam(new Date());
+    setupInitialDateIndex();
+  } catch (err) {
+    console.error("Error initializing calendar:", err);
+    matchDates = generateRollingDates();
+    setupInitialDateIndex();
+  }
+}
 
+function setupInitialDateIndex() {
+  const todayStr = formatDateForParam(new Date());
+  
+  if (currentLeague.startsWith('uefa.') || currentLeague === 'eng.fa') {
+    currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
+    if (currentMatchDateIndex === -1) currentMatchDateIndex = 30;
+  } else {
     if (matchDates.length > 0) {
       currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
       if (currentMatchDateIndex === -1) {
         currentMatchDateIndex = matchDates.length - 1;
       }
-      
-      populateDropdown();
-      loadMatchesForCurrentIndex();
     } else {
-      matchDates = [todayStr];
       currentMatchDateIndex = 0;
-      populateDropdown();
-      loadMatchesForCurrentIndex();
     }
-  } catch (err) {
-    console.error("Error initializing calendar:", err);
-    matchDates = generateRollingDates();
-    currentMatchDateIndex = matchDates.findIndex(d => d >= formatDateForParam(new Date())) || 0;
-    populateDropdown();
-    loadMatchesForCurrentIndex();
   }
+  
+  populateDropdown();
+  loadMatchesForCurrentIndex();
 }
 
 function populateDropdown() {
