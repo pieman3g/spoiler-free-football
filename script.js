@@ -37,14 +37,14 @@ function generateRollingDates() {
 }
 
 async function initCalendar() {
-  try {
-    // For cup competitions, use rolling date windows because their calendar feeds are structured differently
-    if (currentLeague.startsWith('uefa.') || currentLeague === 'eng.fa') {
-      matchDates = generateRollingDates();
-      setupInitialDateIndex();
-      return;
-    }
+  // Always use rolling dates for cups/tournaments so the dropdown fills correctly
+  if (currentLeague.toLowerCase().includes('uefa') || currentLeague === 'eng.fa') {
+    matchDates = generateRollingDates();
+    setupInitialDateIndex();
+    return;
+  }
 
+  try {
     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
     const data = await res.json();
     
@@ -76,18 +76,14 @@ async function initCalendar() {
 function setupInitialDateIndex() {
   const todayStr = formatDateForParam(new Date());
   
-  if (currentLeague.startsWith('uefa.') || currentLeague === 'eng.fa') {
+  if (matchDates.length > 0) {
     currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
-    if (currentMatchDateIndex === -1) currentMatchDateIndex = 30;
-  } else {
-    if (matchDates.length > 0) {
-      currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
-      if (currentMatchDateIndex === -1) {
-        currentMatchDateIndex = matchDates.length - 1;
-      }
-    } else {
-      currentMatchDateIndex = 0;
+    if (currentMatchDateIndex === -1) {
+      currentMatchDateIndex = matchDates.length > 0 ? matchDates.length - 1 : 0;
     }
+  } else {
+    matchDates = [todayStr];
+    currentMatchDateIndex = 0;
   }
   
   populateDropdown();
