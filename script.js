@@ -39,18 +39,19 @@ async function loadMatches() {
       let homeScore = "0", awayScore = "0";
       let homeLogo = "", awayLogo = "";
       
-      competitors.forEach(comp => {
-        const teamInfo = comp.team;
-        if (comp.homeAway === "home") {
-          homeName = teamInfo.shortDisplayName || teamInfo.name;
-          homeScore = comp.score || "0";
-          homeLogo = teamInfo.logo || "";
-        } else if (comp.homeAway === "away") {
-          awayName = teamInfo.shortDisplayName || teamInfo.name;
-          awayScore = comp.score || "0";
-          awayLogo = teamInfo.logo || "";
-        }
-      });
+      const homeComp = competitors.find(c => c.homeAway === "home");
+      const awayComp = competitors.find(c => c.homeAway === "away");
+
+      if (homeComp) {
+        homeName = homeComp.team.shortDisplayName || homeComp.team.name;
+        homeScore = homeComp.score || "0";
+        homeLogo = homeComp.team.logo || "";
+      }
+      if (awayComp) {
+        awayName = awayComp.team.shortDisplayName || awayComp.team.name;
+        awayScore = awayComp.score || "0";
+        awayLogo = awayComp.team.logo || "";
+      }
       
       const matchName = `${homeName} vs ${awayName}`;
       
@@ -67,6 +68,34 @@ async function loadMatches() {
         statusText = "SCHEDULED";
       }
 
+      // Parse goal details directly from scoreboard details
+      let homeGoals = [];
+      let awayGoals = [];
+
+      if (competitions.details) {
+        competitions.details.forEach(detail => {
+          if (detail.scoringPlay) {
+            let playerName = "Goal";
+            if (detail.athletes && detail.athletes.length > 0) {
+              playerName = detail.athletes[0].displayName || detail.athletes[0].shortName;
+            } else if (detail.text) {
+              playerName = detail.text;
+            }
+
+            const clockTime = detail.clock?.displayValue ? `${detail.clock.displayValue}'` : "";
+            const scoringTeamId = detail.team?.id;
+            const isHome = scoringTeamId === homeComp?.team?.id;
+
+            const goalString = `${playerName} ${clockTime}`.trim();
+            if (isHome) {
+              homeGoals.push(goalString);
+            } else {
+              awayGoals.push(goalString);
+            }
+          }
+        });
+      }
+
       return {
         id: matchId,
         teams: matchName,
@@ -77,6 +106,8 @@ async function loadMatches() {
         score: scoreStr,
         status: statusText,
         dateTime: dateTimeDisplay,
+        homeGoals: homeGoals,
+        awayGoals: awayGoals,
         highlightUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}`,
         upvotes: 0,
         downvotes: 0
@@ -106,9 +137,11 @@ function renderMatches(matches) {
 
   const savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
 
-  matches.matchList = matches; // reference
   matches.forEach(match => {
     const userVote = savedVotes[match.id] || 0;
+
+    let homeGoalsHtml = match.homeGoals.map(g => `<div>⚽ ${g}</div>`).join('');
+    let awayGoalsHtml = match.awayGoals.map(g => `<div>⚽ ${g}</div>`).join('');
 
     const card = document.createElement('div');
     card.classList.add('match-card');
@@ -123,7 +156,7 @@ function renderMatches(matches) {
           ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge">` : ''}
           <div class="team-info-block">
             <span class="team-name">${match.homeTeam}</span>
-            <div class="scorers hidden" id="home-scorers-${match.id}"></div>
+            <div class="scorers hidden" id="home-scorers-${match.id}">${homeGoalsHtml}</div>
           </div>
         </div>
         <div class="center-area">
@@ -133,7 +166,7 @@ function renderMatches(matches) {
         <div class="team-side away">
           <div class="team-info-block">
             <span class="team-name">${match.awayTeam}</span>
-            <div class="scorers hidden" id="away-scorers-${match.id}"></div>
+            <div class="scorers hidden" id="away-scorers-${match.id}">${awayGoalsHtml}</div>
           </div>
           ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge">` : ''}
         </div>
@@ -155,7 +188,7 @@ function renderMatches(matches) {
   });
 }
 
-async function toggleScore(event, matchId) {
+function toggleScore(event, matchId) {
   const scoreSpan = document.getElementById(`score-${matchId}`);
   const vsSpan = document.getElementById(`vs-${matchId}`);
   const homeScorers = document.getElementById(`home-scorers-${matchId}`);
@@ -170,48 +203,6 @@ async function toggleScore(event, matchId) {
   if (awayScorers) awayScorers.classList.toggle('hidden');
   
   btn.textContent = isHidden ? 'Hide score' : 'Show score';
-
-  // Fetch individual goalscorers on demand when revealing for the first time
-  if (isHidden && homeScorers.innerHTML === '') {
-    try {
-      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=${matchId}`);
-      const summaryData = await res.json();
-      
-      if (summaryData.details && summaryData.details.length > 0) {
-        let homeHtml = '';
-        let awayHtml = '';
-        
-        const homeTeamId = summaryData.boxscore?.teams?.[0]?.team?.id;
-
-        summaryData.details.forEach(detail => {
-          if (detail.scoringPlay) {
-            let playerName = "Goal";
-            if (detail.athletes && detail.athletes.length > 0) {
-              playerName = detail.athletes[0].displayName || detail.athletes[0].shortName;
-            } else if (detail.text) {
-              playerName = detail.text;
-            }
-            
-            const timeMin = detail.clock?.displayValue ? `${detail.clock.displayValue}'` : '';
-            const scoringTeamId = detail.team?.id;
-            const isHomeGoal = (scoringTeamId === homeTeamId);
-
-            const goalLine = `<div>⚽ ${playerName} ${timeMin}</div>`;
-            if (isHomeGoal) {
-              homeHtml += goalLine;
-            } else {
-              awayHtml += goalLine;
-            }
-          }
-        });
-
-        homeScorers.innerHTML = homeHtml;
-        awayScorers.innerHTML = awayHtml;
-      }
-    } catch (err) {
-      console.error("Could not load match summary details:", err);
-    }
-  }
 }
 
 function vote(matchId) {
