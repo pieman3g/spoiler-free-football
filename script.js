@@ -91,7 +91,6 @@ function renderMatches(matches) {
 
   matches.forEach(match => {
     const userVote = savedVotes[match.id] || 0;
-    const currentUpvotes = (match.upvotes || 0) + (userVote === 1 ? 1 : 0);
 
     const card = document.createElement('div');
     card.classList.add('match-card');
@@ -121,7 +120,7 @@ function renderMatches(matches) {
             : '<span style="color:#6b7280; font-size:0.8rem;">No Video</span>'}
         </div>
         <div class="card-actions">
-          <button class="reveal-btn" onclick="toggleScore(${match.id})">Show score</button>
+          <button class="reveal-btn" onclick="toggleScore(event, ${match.id})">Show score</button>
           <button class="vote-btn ${userVote === 1 ? 'active' : ''}" onclick="vote(${match.id})">★ Save</button>
         </div>
       </div>
@@ -131,7 +130,7 @@ function renderMatches(matches) {
   });
 }
 
-function toggleScore(matchId) {
+function toggleScore(event, matchId) {
   const scoreSpan = document.getElementById(`score-${matchId}`);
   const vsSpan = document.getElementById(`vs-${matchId}`);
   const btn = event.target;
