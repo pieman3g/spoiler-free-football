@@ -1,7 +1,7 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f8f9fa;
-    color: #212529;
+    background-color: #121212;
+    color: #e0e0e0;
     margin: 0;
     padding: 20px;
 }
@@ -9,97 +9,169 @@ body {
 .container {
     max-width: 800px;
     margin: 0 auto;
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 header {
-    margin-bottom: 20px;
-    border-bottom: 1px solid #dee2e6;
-    padding-bottom: 10px;
-}
-
-header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-}
-
-header p {
-    margin: 5px 0 0 0;
-    color: #6c757d;
-    font-size: 0.9rem;
-}
-
-.match-row {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 12px 15px;
-    border-bottom: 1px solid #eee;
-    gap: 15px;
-}
-
-.match-row:last-child {
-    border-bottom: none;
-}
-
-.match-meta {
-    min-width: 60px;
-    font-size: 0.85rem;
-}
-
-.match-teams {
-    display: flex;
     align-items: center;
-    gap: 12px;
-    flex-grow: 1;
-    font-weight: 500;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 15px;
 }
 
-.team-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.team-badge {
-    object-fit: contain;
-    vertical-align: middle;
-}
-
-.vs-text {
-    color: #6c757d;
-    font-size: 0.9rem;
-}
-
-.highlight-btn {
-    background-color: #e63946;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.highlight-btn:hover {
-    background-color: #d62828;
-}
-
-.score-area {
+.brand {
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 100px;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.spoiler-badge {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.nav-tab {
+    color: #9ca3af;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.nav-tab.active {
+    color: #ffffff;
+    font-weight: 500;
+    border-bottom: 2px solid #ffffff;
+    padding-bottom: 10px;
+    margin-bottom: -11px;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #ffffff;
+}
+
+.section-subtitle {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    margin-bottom: 20px;
+}
+
+/* Match Card Layout */
+.match-card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.card-top {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-top .status {
+    color: #ffffff;
+}
+
+.teams-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.team-side {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 42%;
+}
+
+.team-side.home {
+    justify-content: flex-start;
+}
+
+.team-side.away {
     justify-content: flex-end;
+    text-align: right;
+}
+
+.team-badge {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.team-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #ffffff;
+}
+
+.vs-divider {
+    color: #6b7280;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #252525;
+    padding-top: 12px;
+    margin-top: 4px;
+}
+
+.highlight-btn {
+    background-color: #dc2626;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.highlight-btn:hover {
+    background-color: b91c1c;
+}
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .score {
     font-weight: bold;
     font-family: monospace;
+    font-size: 0.95rem;
 }
 
 .score.hidden {
@@ -108,41 +180,25 @@ header p {
     color: transparent;
 }
 
-.reveal-btn {
-    background: #e9ecef;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-
-.reveal-btn:hover {
-    background: #dee2e6;
-}
-
-.vote-section {
-    display: flex;
-    gap: 6px;
-}
-
-.vote-btn {
-    background: #f1f3f5;
-    border: 1px solid #ced4da;
-    padding: 4px 8px;
-    border-radius: 4px;
+.reveal-btn, .vote-btn {
+    background: #2a2a2a;
+    border: 1px solid #3f3f46;
+    color: #e0e0e0;
+    padding: 6px 12px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 0.8rem;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+}
+
+.reveal-btn:hover, .vote-btn:hover {
+    background: #3f3f46;
 }
 
 .vote-btn.active {
-    background: #d0ebff;
-    border-color: #74c0fc;
-}
-
-.vote-btn:hover {
-    background: #e9ecef;
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
 }
