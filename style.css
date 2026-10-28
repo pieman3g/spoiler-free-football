@@ -398,6 +398,7 @@ header {
     gap: 6px;
     color: #e0e0e0;
     font-weight: 500;
+    font-size: 0.88rem;
     cursor: pointer;
     user-select: none;
     transition: color 0.15s ease;
@@ -409,21 +410,20 @@ header {
 
 .hint-bullet {
     color: #10b981;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .hint-answer {
     margin-left: 18px;
     margin-top: 4px;
     color: #9ca3af;
-    font-size: 0.82rem;
+    font-size: 0.85rem;
 }
 
 .hint-answer.hidden {
     display: none !important;
 }
 
-/* Slimmer, Cleaner Footer & Compact Action Buttons */
 .card-footer {
     display: flex;
     justify-content: space-between;
