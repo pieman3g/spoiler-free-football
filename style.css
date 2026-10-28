@@ -398,6 +398,13 @@ header {
     gap: 6px;
     color: #e0e0e0;
     font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease;
+}
+
+.hint-question:hover {
+    color: #10b981;
 }
 
 .hint-bullet {
@@ -407,9 +414,13 @@ header {
 
 .hint-answer {
     margin-left: 18px;
-    margin-top: 2px;
+    margin-top: 4px;
     color: #9ca3af;
     font-size: 0.82rem;
+}
+
+.hint-answer.hidden {
+    display: none !important;
 }
 
 .card-footer {
