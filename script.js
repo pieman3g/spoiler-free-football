@@ -243,6 +243,9 @@ function renderMatches(matches) {
 
     const card = document.createElement('div');
     card.classList.add('match-card');
+    if (globalSpoilersRevealed) {
+      card.classList.add('expanded');
+    }
 
     card.innerHTML = `
       <div class="card-top">
@@ -302,7 +305,8 @@ function toggleScore(event, matchId) {
   if (homeScorers) homeScorers.classList.toggle('hidden');
   if (awayScorers) awayScorers.classList.toggle('hidden');
   
-  // Toggle truncation class dynamically when score is shown/hidden
+  // Toggle card expansion and truncation classes smoothly
+  card.classList.toggle('expanded', isHidden);
   teamSides.forEach(side => side.classList.toggle('score-visible', isHidden));
   
   btn.textContent = isHidden ? 'Hide score' : 'Show score';
@@ -353,11 +357,17 @@ function revealAllScores() {
 }
 
 function updateAllScoresVisibility(show) {
+  const cards = document.querySelectorAll('.match-card');
   const scoreSpans = document.querySelectorAll('.score');
   const vsSpans = document.querySelectorAll('.vs-divider');
   const scorersBlocks = document.querySelectorAll('.scorers');
   const revealBtns = document.querySelectorAll('.reveal-btn');
   const teamSides = document.querySelectorAll('.team-side');
+
+  cards.forEach(card => {
+    if (show) card.classList.add('expanded');
+    else card.classList.remove('expanded');
+  });
 
   scoreSpans.forEach(el => {
     if (show) el.classList.remove('hidden');
