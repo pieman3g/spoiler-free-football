@@ -194,7 +194,7 @@ header {
 
 /* Match Card Layout & Wikihoops Expansion Transition */
 .match-card {
-    background: #202024; /* Slightly lighter card background */
+    background: #202024;
     border: 1px solid #2f2f35;
     border-radius: 10px;
     padding: 14px 18px;
@@ -203,7 +203,7 @@ header {
 }
 
 .match-card.expanded {
-    background: #26262c; /* Slightly lighter expanded background */
+    background: #26262c;
     border-color: #484852;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
@@ -485,6 +485,17 @@ header {
     background: #1e3a8a;
     border-color: #3b82f6;
     color: #93c5fd;
+}
+
+/* Site Footer / Disclaimer Styling */
+.site-footer {
+    text-align: center;
+    font-size: 0.7rem;
+    color: #6b7280;
+    margin-top: 30px;
+    border-top: 1px solid #2a2a2a;
+    padding-top: 15px;
+    line-height: 1.4;
 }
 
 /* Modal Overlay & Centering Fix */
