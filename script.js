@@ -6,15 +6,13 @@ const leagueSelect = document.getElementById('league-select');
 const prevBtn = document.getElementById('prev-date-btn');
 const nextBtn = document.getElementById('next-date-btn');
 
-// Load saved preferences from localStorage or fall back to defaults
 let currentLeague = localStorage.getItem('quiet_pitch_league') || 'eng.1';
 let savedDateIndex = localStorage.getItem('quiet_pitch_date_index');
 let currentMatchDateIndex = savedDateIndex !== null ? parseInt(savedDateIndex) : -1;
 let globalSpoilersRevealed = false;
 let matchDates = [];
-let currentTab = 'matches'; // 'matches', 'watchability', 'saved'
+let currentTab = 'matches';
 
-// Set the dropdown to match the saved league on load and update title
 if (leagueSelect) {
   leagueSelect.value = currentLeague;
   const selectedOpt = leagueSelect.options[leagueSelect.selectedIndex];
@@ -40,12 +38,10 @@ function parseParamDate(dateStr) {
 function switchTab(tabName) {
   currentTab = tabName;
   
-  // Update active styling on tab buttons
   document.getElementById('tab-matches').classList.toggle('active', tabName === 'matches');
   document.getElementById('tab-saved').classList.toggle('active', tabName === 'saved');
   document.getElementById('tab-watchability').classList.toggle('active', tabName === 'watchability');
 
-  // Toggle visibility of date picker and league selector bars depending on the tab
   const datePickerBar = document.querySelector('.date-picker-bar');
   const competitionBar = document.querySelector('.competition-selector-bar');
   
@@ -53,7 +49,7 @@ function switchTab(tabName) {
     if (datePickerBar) datePickerBar.style.display = 'none';
     if (competitionBar) competitionBar.style.display = 'none';
     if (titleEl) titleEl.textContent = 'Saved Matches';
-    if (subtitleEl) subtitleEl.textContent = 'Your bookmarked matches across all leagues';
+    if (subtitleEl) subtitleEl.textContent = 'Your bookmarked matches archive';
     loadSavedMatches();
   } else if (tabName === 'matches') {
     if (datePickerBar) datePickerBar.style.display = 'flex';
@@ -82,49 +78,33 @@ async function loadSavedMatches() {
   }
 
   try {
-    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
-    const data = await res.json();
-    const events = data.events || [];
+    // Fetch each saved match directly from ESPN's event endpoint
+    const matchPromises = savedMatchIds.map(async (matchId) => {
+      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/all/summary?event=${matchId}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const competition = data.header?.competitions?.[0];
+      if (!competition) return null;
 
-    const matches = events.filter(event => savedMatchIds.includes(event.id)).map(event => {
-      const matchId = event.id;
-      const statusType = event.status.type;
-      const state = statusType.state; 
-      
-      const matchDateObj = new Date(event.date);
-      const dayStr = matchDateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-      const timeStr = matchDateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-      const dateTimeDisplay = `${dayStr} · ${timeStr}`;
-
-      const competitions = event.competitions[0];
-      const competitors = competitions.competitors;
-      
-      let homeName = "Home", awayName = "Away";
-      let homeScore = 0, awayScore = 0;
-      let homeLogo = "", awayLogo = "";
-      let homeScorersList = "";
-      let awayScorersList = "";
-      
+      const competitors = competition.competitors || [];
       const homeComp = competitors.find(c => c.homeAway === "home");
       const awayComp = competitors.find(c => c.homeAway === "away");
 
-      if (homeComp) {
-        homeName = homeComp.team.shortDisplayName || homeComp.team.name;
-        homeScore = parseInt(homeComp.score || "0", 10);
-        homeLogo = homeComp.team.logo || "";
-      }
-      if (awayComp) {
-        awayName = awayComp.team.shortDisplayName || awayComp.team.name;
-        awayScore = parseInt(awayComp.score || "0", 10);
-        awayLogo = awayComp.team.logo || "";
-      }
+      let homeName = homeComp?.team?.shortDisplayName || homeComp?.team?.name || "Home";
+      let awayName = awayComp?.team?.shortDisplayName || awayComp?.team?.name || "Away";
+      let homeScore = parseInt(homeComp?.score || "0", 10);
+      let awayScore = parseInt(awayComp?.score || "0", 10);
+      let homeLogo = homeComp?.team?.logo || "";
+      let awayLogo = awayComp?.team?.logo || "";
 
-      if (competitions.details && Array.isArray(competitions.details)) {
+      let homeScorersList = "";
+      let awayScorersList = "";
+      if (data.details && Array.isArray(data.details)) {
         const homeTeamId = homeComp?.team?.id;
         const homeScorers = [];
         const awayScorers = [];
 
-        competitions.details.forEach(detail => {
+        data.details.forEach(detail => {
           if (detail.scoringPlay && detail.athletesInvolved && detail.athletesInvolved.length > 0) {
             const scorerName = detail.athletesInvolved[0].shortName || detail.athletesInvolved[0].displayName;
             const minute = detail.clock?.displayValue || '';
@@ -137,18 +117,21 @@ async function loadSavedMatches() {
             }
           }
         });
-
         homeScorersList = homeScorers.join('<br>');
         awayScorersList = awayScorers.join('<br>');
       }
-      
-      const matchName = `${homeName} vs ${awayName}`;
-      let scoreStr = `${homeScore} - ${awayScore}`;
-      let statusText = state === "in" ? `LIVE ${event.status.type.detail || ''}` : (state === "post" ? "FULL TIME" : "SCHEDULED");
 
-      const isFinished = (state === "post" || state === "in");
+      const matchDateObj = new Date(competition.date || data.header?.competitions?.[0]?.date);
+      const dayStr = matchDateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      const timeStr = matchDateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const dateTimeDisplay = `${dayStr} · ${timeStr}`;
+
+      const statusState = competition.status?.type?.state;
+      let statusText = statusState === "in" ? `LIVE ${competition.status.type.detail || ''}` : (statusState === "post" ? "FULL TIME" : "SCHEDULED");
+      const isFinished = (statusState === "post" || statusState === "in");
       const totalGoals = homeScore + awayScore;
-      
+      const matchName = `${homeName} vs ${awayName}`;
+
       return {
         id: matchId,
         teams: matchName,
@@ -158,23 +141,23 @@ async function loadSavedMatches() {
         awayLogo: awayLogo,
         homeScorers: homeScorersList,
         awayScorers: awayScorersList,
-        score: scoreStr,
+        score: `${homeScore} - ${awayScore}`,
         status: statusText,
         dateTime: dateTimeDisplay,
         hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
-        highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
-        upvotes: 0,
-        downvotes: 0
+        highlightUrl: isFinished && statusState === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
       };
     });
 
-    if (matches.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No saved matches found in the current league feed. Try switching leagues to locate your saved games!</p>';
+    const resolvedMatches = (await Promise.all(matchPromises)).filter(Boolean);
+
+    if (resolvedMatches.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Could not retrieve saved matches from the server.</p>';
       return;
     }
 
-    renderMatches(matches);
+    renderMatches(resolvedMatches);
   } catch (err) {
     console.error("Error loading saved matches:", err);
     container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Could not load saved matches.</p>';
@@ -379,8 +362,6 @@ async function loadMatchesForCurrentIndex() {
         hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
         highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
-        upvotes: 0,
-        downvotes: 0
       };
     });
     
