@@ -360,11 +360,96 @@ header {
     color: #93c5fd;
 }
 
-/* Modal Overlay */
+/* Modal Overlay & Centering Fix */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-overlay.hidden {
+    display: none !important;
+}
+
+.modal-card {
+    background: #1a1a1e;
+    border: 1px solid #333338;
+    border-radius: 12px;
+    padding: 22px 24px;
     width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0
+    max-width: 380px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    color: #e0e0e0;
+    margin: auto;
+}
+
+.modal-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.15rem;
+    color: #ffffff;
+}
+
+.modal-card p {
+    margin: 0 0 18px 0;
+    font-size: 0.9rem;
+    color: #9ca3af;
+    line-height: 1.4;
+}
+
+.modal-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    color: #d1d5db;
+    margin-bottom: 22px;
+    cursor: pointer;
+}
+
+.modal-checkbox-label input {
+    cursor: pointer;
+    accent-color: #10b981;
+    width: 16px;
+    height: 16px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.modal-btn.cancel {
+    background: #27272a;
+    border-color: #3f3f46;
+    color: #e0e0e0;
+}
+
+.modal-btn.cancel:hover {
+    background: #3f3f46;
+}
+
+.modal-btn.continue {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.modal-btn.continue:hover {
+    background: #059669;
+}
