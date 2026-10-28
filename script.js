@@ -321,7 +321,7 @@ function renderMatches(matches) {
         <div class="footer-left">
           ${match.highlightUrl && match.highlightUrl !== '#' 
             ? `<a href="${match.highlightUrl}" target="_blank" rel="noopener noreferrer" class="highlight-btn">▶ Highlights</a>` 
-            : '<span style="color:#6b7280; font-size:0.75rem;">No Video</span>'}
+            : '<span style="color:#6b7280; font-size:0.7rem;">No Video</span>'}
           <button class="hints-btn" onclick="toggleHints(${match.id})">💡 Hints</button>
         </div>
         <div class="card-actions">
