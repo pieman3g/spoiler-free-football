@@ -281,19 +281,21 @@ header {
     text-overflow: ellipsis;
 }
 
-/* Away team score-visible adjustments to truncate cleanly from the right end */
-.team-side.away.score-visible {
-    flex-direction: row-reverse;
-    justify-content: flex-start;
-}
+/* Mobile-only away team row-reverse layout adjustment for narrow screens */
+@media (max-width: 768px) {
+    .team-side.away.score-visible {
+        flex-direction: row-reverse;
+        justify-content: flex-start;
+    }
 
-.team-side.away.score-visible .team-info-block {
-    align-items: flex-start;
-    text-align: left;
-}
+    .team-side.away.score-visible .team-info-block {
+        align-items: flex-start;
+        text-align: left;
+    }
 
-.team-side.away.score-visible .team-name {
-    text-align: left;
+    .team-side.away.score-visible .team-name {
+        text-align: left;
+    }
 }
 
 .scorers {
