@@ -322,8 +322,8 @@ header {
 .scorers {
     font-size: 0.75rem;
     color: #9ca3af;
-    margin-top: 2px;
-    line-height: 1.2;
+    margin-top: 4px;
+    line-height: 1.4;
 }
 
 .scorers.hidden {
