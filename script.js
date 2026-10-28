@@ -185,7 +185,7 @@ async function loadMatchesForCurrentIndex() {
         awayLogo = awayComp.team.logo || "";
       }
 
-      // Parse goalscorers from ESPN details if available
+      // Parse goalscorers from ESPN details if available and stack them vertically
       if (competitions.details && Array.isArray(competitions.details)) {
         const homeTeamId = homeComp?.team?.id;
         const homeScorers = [];
@@ -205,8 +205,8 @@ async function loadMatchesForCurrentIndex() {
           }
         });
 
-        homeScorersList = homeScorers.join(', ');
-        awayScorersList = awayScorers.join(', ');
+        homeScorersList = homeScorers.join('<br>');
+        awayScorersList = awayScorers.join('<br>');
       }
       
       const matchName = `${homeName} vs ${awayName}`;
