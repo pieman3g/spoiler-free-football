@@ -233,7 +233,7 @@ header {
 
 .team-side {
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Locked to the top so team name doesn't jump upward */
     gap: 10px;
     width: 38%;
     min-width: 0;
@@ -263,7 +263,7 @@ header {
     flex-direction: column;
     min-width: 0;
     flex: 1;
-    justify-content: center;
+    justify-content: flex-start;
 }
 
 .team-side.away .team-info-block {
@@ -278,6 +278,7 @@ header {
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
+    line-height: 32px; /* Matches badge height to center text neatly against the logo */
 }
 
 /* Dynamic truncation triggered only when scores are visible */
@@ -296,7 +297,7 @@ header {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 32px;
         gap: 10px;
-        align-items: center;
+        align-items: start;
     }
 
     .team-side.away.score-visible .team-info-block {
