@@ -12,6 +12,7 @@ let savedDateIndex = localStorage.getItem('quiet_pitch_date_index');
 let currentMatchDateIndex = savedDateIndex !== null ? parseInt(savedDateIndex) : -1;
 let globalSpoilersRevealed = false;
 let matchDates = [];
+let currentTab = 'matches'; // 'matches', 'watchability', 'saved'
 
 // Set the dropdown to match the saved league on load and update title
 if (leagueSelect) {
@@ -34,6 +35,150 @@ function parseParamDate(dateStr) {
   const m = parseInt(dateStr.substring(4, 6)) - 1;
   const d = parseInt(dateStr.substring(6, 8));
   return new Date(y, m, d);
+}
+
+function switchTab(tabName) {
+  currentTab = tabName;
+  
+  // Update active styling on tab buttons
+  document.getElementById('tab-matches').classList.toggle('active', tabName === 'matches');
+  document.getElementById('tab-saved').classList.toggle('active', tabName === 'saved');
+  document.getElementById('tab-watchability').classList.toggle('active', tabName === 'watchability');
+
+  // Toggle visibility of date picker and league selector bars depending on the tab
+  const datePickerBar = document.querySelector('.date-picker-bar');
+  const competitionBar = document.querySelector('.competition-selector-bar');
+  
+  if (tabName === 'saved') {
+    if (datePickerBar) datePickerBar.style.display = 'none';
+    if (competitionBar) competitionBar.style.display = 'none';
+    if (titleEl) titleEl.textContent = 'Saved Matches';
+    if (subtitleEl) subtitleEl.textContent = 'Your bookmarked matches across all leagues';
+    loadSavedMatches();
+  } else if (tabName === 'matches') {
+    if (datePickerBar) datePickerBar.style.display = 'flex';
+    if (competitionBar) competitionBar.style.display = 'flex';
+    const selectedOpt = leagueSelect.options[leagueSelect.selectedIndex];
+    if (selectedOpt && titleEl) titleEl.textContent = selectedOpt.text;
+    loadMatchesForCurrentIndex();
+  } else {
+    if (datePickerBar) datePickerBar.style.display = 'none';
+    if (competitionBar) competitionBar.style.display = 'none';
+    if (titleEl) titleEl.textContent = 'Watchability Feed';
+    if (subtitleEl) subtitleEl.textContent = 'Coming soon...';
+    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Watchability curation view is under construction.</p>';
+  }
+}
+
+async function loadSavedMatches() {
+  container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Loading saved matches...</p>';
+  
+  const savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
+  const savedMatchIds = Object.keys(savedVotes).filter(id => savedVotes[id] === 1);
+
+  if (savedMatchIds.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No saved matches yet. Click the "★ Save" button on any match card to archive it here!</p>';
+    return;
+  }
+
+  try {
+    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
+    const data = await res.json();
+    const events = data.events || [];
+
+    const matches = events.filter(event => savedMatchIds.includes(event.id)).map(event => {
+      const matchId = event.id;
+      const statusType = event.status.type;
+      const state = statusType.state; 
+      
+      const matchDateObj = new Date(event.date);
+      const dayStr = matchDateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      const timeStr = matchDateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const dateTimeDisplay = `${dayStr} · ${timeStr}`;
+
+      const competitions = event.competitions[0];
+      const competitors = competitions.competitors;
+      
+      let homeName = "Home", awayName = "Away";
+      let homeScore = 0, awayScore = 0;
+      let homeLogo = "", awayLogo = "";
+      let homeScorersList = "";
+      let awayScorersList = "";
+      
+      const homeComp = competitors.find(c => c.homeAway === "home");
+      const awayComp = competitors.find(c => c.homeAway === "away");
+
+      if (homeComp) {
+        homeName = homeComp.team.shortDisplayName || homeComp.team.name;
+        homeScore = parseInt(homeComp.score || "0", 10);
+        homeLogo = homeComp.team.logo || "";
+      }
+      if (awayComp) {
+        awayName = awayComp.team.shortDisplayName || awayComp.team.name;
+        awayScore = parseInt(awayComp.score || "0", 10);
+        awayLogo = awayComp.team.logo || "";
+      }
+
+      if (competitions.details && Array.isArray(competitions.details)) {
+        const homeTeamId = homeComp?.team?.id;
+        const homeScorers = [];
+        const awayScorers = [];
+
+        competitions.details.forEach(detail => {
+          if (detail.scoringPlay && detail.athletesInvolved && detail.athletesInvolved.length > 0) {
+            const scorerName = detail.athletesInvolved[0].shortName || detail.athletesInvolved[0].displayName;
+            const minute = detail.clock?.displayValue || '';
+            const scorerText = `${scorerName} ${minute}'`;
+
+            if (detail.team?.id === homeTeamId) {
+              homeScorers.push(scorerText);
+            } else {
+              awayScorers.push(scorerText);
+            }
+          }
+        });
+
+        homeScorersList = homeScorers.join('<br>');
+        awayScorersList = awayScorers.join('<br>');
+      }
+      
+      const matchName = `${homeName} vs ${awayName}`;
+      let scoreStr = `${homeScore} - ${awayScore}`;
+      let statusText = state === "in" ? `LIVE ${event.status.type.detail || ''}` : (state === "post" ? "FULL TIME" : "SCHEDULED");
+
+      const isFinished = (state === "post" || state === "in");
+      const totalGoals = homeScore + awayScore;
+      
+      return {
+        id: matchId,
+        teams: matchName,
+        homeTeam: homeName,
+        awayTeam: awayName,
+        homeLogo: homeLogo,
+        awayLogo: awayLogo,
+        homeScorers: homeScorersList,
+        awayScorers: awayScorersList,
+        score: scoreStr,
+        status: statusText,
+        dateTime: dateTimeDisplay,
+        hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
+        howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
+        highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
+        upvotes: 0,
+        downvotes: 0
+      };
+    });
+
+    if (matches.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No saved matches found in the current league feed. Try switching leagues to locate your saved games!</p>';
+      return;
+    }
+
+    renderMatches(matches);
+  } catch (err) {
+    console.error("Error loading saved matches:", err);
+    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Could not load saved matches.</p>';
+  }
 }
 
 async function initCalendar() {
@@ -99,7 +244,9 @@ function setupInitialDateIndex() {
   }
   
   populateDropdown();
-  loadMatchesForCurrentIndex();
+  if (currentTab === 'matches') {
+    loadMatchesForCurrentIndex();
+  }
 }
 
 function populateDropdown() {
@@ -126,6 +273,7 @@ function updateNavButtons() {
 }
 
 async function loadMatchesForCurrentIndex() {
+  if (currentTab !== 'matches') return;
   if (currentMatchDateIndex < 0 || currentMatchDateIndex >= matchDates.length) return;
   
   const dateStr = matchDates[currentMatchDateIndex];
@@ -186,7 +334,6 @@ async function loadMatchesForCurrentIndex() {
         awayLogo = awayComp.team.logo || "";
       }
 
-      // Parse goalscorers from ESPN details if available
       if (competitions.details && Array.isArray(competitions.details)) {
         const homeTeamId = homeComp?.team?.id;
         const homeScorers = [];
@@ -211,24 +358,12 @@ async function loadMatchesForCurrentIndex() {
       }
       
       const matchName = `${homeName} vs ${awayName}`;
-      
       let scoreStr = `${homeScore} - ${awayScore}`;
-      let statusText = "UPCOMING";
-      
-      if (state === "in") {
-        statusText = `LIVE ${event.status.type.detail || ''}`;
-      } else if (state === "post") {
-        statusText = "FULL TIME";
-      } else {
-        statusText = "SCHEDULED";
-      }
+      let statusText = state === "in" ? `LIVE ${event.status.type.detail || ''}` : (state === "post" ? "FULL TIME" : "SCHEDULED");
 
       const isFinished = (state === "post" || state === "in");
       const totalGoals = homeScore + awayScore;
       
-      const hasGoalsAnswer = isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.';
-      const howManyAnswer = isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A';
-
       return {
         id: matchId,
         teams: matchName,
@@ -241,8 +376,8 @@ async function loadMatchesForCurrentIndex() {
         score: scoreStr,
         status: statusText,
         dateTime: dateTimeDisplay,
-        hasGoalsText: hasGoalsAnswer,
-        howManyGoalsText: howManyAnswer,
+        hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
+        howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
         highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
         upvotes: 0,
         downvotes: 0
@@ -306,7 +441,6 @@ function renderMatches(matches) {
         </div>
       </div>
       
-      <!-- Wikihoops-style Hints Drawer with Clickable Questions -->
       <div class="hints-drawer hidden" id="hints-${match.id}">
         <div class="hint-block">
           <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> Were there goals?</div>
@@ -378,10 +512,14 @@ function vote(matchId) {
   let savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
   savedVotes[matchId] = savedVotes[matchId] === 1 ? 0 : 1;
   localStorage.setItem('spoiler_free_votes', JSON.stringify(savedVotes));
-  loadMatchesForCurrentIndex();
+  
+  if (currentTab === 'saved') {
+    loadSavedMatches();
+  } else {
+    loadMatchesForCurrentIndex();
+  }
 }
 
-// Global Spoiler Modal & Toggle Handlers
 function handleGlobalSpoilerClick() {
   if (globalSpoilersRevealed) {
     globalSpoilersRevealed = false;
@@ -456,7 +594,6 @@ function updateAllScoresVisibility(show) {
   });
 }
 
-// Event Listeners with localStorage persistence
 if (leagueSelect) {
   leagueSelect.addEventListener('change', (e) => {
     currentLeague = e.target.value;
@@ -466,8 +603,13 @@ if (leagueSelect) {
     currentMatchDateIndex = -1;
 
     const selectedText = e.target.options[e.target.selectedIndex].text;
-    if (titleEl) titleEl.textContent = selectedText;
-    initCalendar();
+    if (titleEl && currentTab === 'matches') titleEl.textContent = selectedText;
+    
+    if (currentTab === 'matches') {
+      initCalendar();
+    } else if (currentTab === 'saved') {
+      loadSavedMatches();
+    }
   });
 }
 
