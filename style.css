@@ -281,19 +281,16 @@ header {
     text-overflow: ellipsis;
 }
 
-/* Mobile-only away team row-reverse layout adjustment for narrow screens */
+/* Mobile-only away team RTL truncation keeping the badge locked on the right */
 @media (max-width: 768px) {
-    .team-side.away.score-visible {
-        flex-direction: row-reverse;
-        justify-content: flex-start;
-    }
-
     .team-side.away.score-visible .team-info-block {
-        align-items: flex-start;
-        text-align: left;
+        overflow: hidden;
     }
 
     .team-side.away.score-visible .team-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        direction: rtl;
         text-align: left;
     }
 }
