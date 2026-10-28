@@ -168,6 +168,8 @@ async function loadMatchesForCurrentIndex() {
       let homeName = "Home", awayName = "Away";
       let homeScore = "0", awayScore = "0";
       let homeLogo = "", awayLogo = "";
+      let homeScorersList = "";
+      let awayScorersList = "";
       
       const homeComp = competitors.find(c => c.homeAway === "home");
       const awayComp = competitors.find(c => c.homeAway === "away");
@@ -181,6 +183,30 @@ async function loadMatchesForCurrentIndex() {
         awayName = awayComp.team.shortDisplayName || awayComp.team.name;
         awayScore = awayComp.score || "0";
         awayLogo = awayComp.team.logo || "";
+      }
+
+      // Parse goalscorers from ESPN details if available
+      if (competitions.details && Array.isArray(competitions.details)) {
+        const homeTeamId = homeComp?.team?.id;
+        const homeScorers = [];
+        const awayScorers = [];
+
+        competitions.details.forEach(detail => {
+          if (detail.scoringPlay && detail.athletesInvolved && detail.athletesInvolved.length > 0) {
+            const scorerName = detail.athletesInvolved[0].shortName || detail.athletesInvolved[0].displayName;
+            const minute = detail.clock?.displayValue || '';
+            const scorerText = `${scorerName} ${minute}'`;
+
+            if (detail.team?.id === homeTeamId) {
+              homeScorers.push(scorerText);
+            } else {
+              awayScorers.push(scorerText);
+            }
+          }
+        });
+
+        homeScorersList = homeScorers.join(', ');
+        awayScorersList = awayScorers.join(', ');
       }
       
       const matchName = `${homeName} vs ${awayName}`;
@@ -207,6 +233,8 @@ async function loadMatchesForCurrentIndex() {
         awayTeam: awayName,
         homeLogo: homeLogo,
         awayLogo: awayLogo,
+        homeScorers: homeScorersList,
+        awayScorers: awayScorersList,
         score: scoreStr,
         status: statusText,
         dateTime: dateTimeDisplay,
@@ -257,7 +285,7 @@ function renderMatches(matches) {
           ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge">` : ''}
           <div class="team-info-block">
             <span class="team-name">${match.homeTeam}</span>
-            <div class="scorers ${globalSpoilersRevealed ? '' : 'hidden'}" id="home-scorers-${match.id}"></div>
+            <div class="scorers ${globalSpoilersRevealed ? '' : 'hidden'}" id="home-scorers-${match.id}">${match.homeScorers || ''}</div>
           </div>
         </div>
         <div class="center-area">
@@ -267,7 +295,7 @@ function renderMatches(matches) {
         <div class="team-side away ${globalSpoilersRevealed ? 'score-visible' : ''}">
           <div class="team-info-block">
             <span class="team-name">${match.awayTeam}</span>
-            <div class="scorers ${globalSpoilersRevealed ? '' : 'hidden'}" id="away-scorers-${match.id}"></div>
+            <div class="scorers ${globalSpoilersRevealed ? '' : 'hidden'}" id="away-scorers-${match.id}">${match.awayScorers || ''}</div>
           </div>
           ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge">` : ''}
         </div>
