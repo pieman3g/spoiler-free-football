@@ -239,12 +239,11 @@ header {
     justify-content: flex-end;
     text-align: right;
 }
-
 .team-badge {
-    width: 24px !important;
-    height: 24px !important;
-    max-width: 24px !important;
-    max-height: 24px !important;
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
     object-fit: contain;
 }
 
