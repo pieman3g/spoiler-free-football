@@ -226,14 +226,14 @@ header {
 
 .teams-container {
     display: flex;
-    align-items: flex-start; /* Aligns all team blocks to the top */
+    align-items: flex-start;
     justify-content: space-between;
     margin-bottom: 12px;
 }
 
 .team-side {
     display: flex;
-    align-items: flex-start; /* Locks badge and team name aligned at top */
+    align-items: flex-start;
     gap: 10px;
     width: 38%;
     min-width: 0;
@@ -277,7 +277,7 @@ header {
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
-    line-height: 32px; /* Vertically centers name exactly with 32px badge */
+    line-height: 32px;
 }
 
 /* Dynamic truncation triggered only when scores are visible */
@@ -341,7 +341,7 @@ header {
     align-items: center;
     justify-content: center;
     min-width: 90px;
-    height: 32px; /* Aligns center score row with team name top row */
+    height: 32px;
 }
 
 .vs-divider {
@@ -370,6 +370,48 @@ header {
     display: none !important;
 }
 
+/* Wikihoops Hints Drawer Styling */
+.hints-drawer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #2a2a2e;
+    font-size: 0.85rem;
+    color: #9ca3af;
+    line-height: 1.5;
+}
+
+.hints-drawer.hidden {
+    display: none !important;
+}
+
+.hint-block {
+    margin-bottom: 10px;
+}
+
+.hint-block:last-child {
+    margin-bottom: 0;
+}
+
+.hint-question {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #e0e0e0;
+    font-weight: 500;
+}
+
+.hint-bullet {
+    color: #10b981;
+    font-size: 0.9rem;
+}
+
+.hint-answer {
+    margin-left: 18px;
+    margin-top: 2px;
+    color: #9ca3af;
+    font-size: 0.82rem;
+}
+
 .card-footer {
     display: flex;
     justify-content: space-between;
@@ -377,6 +419,12 @@ header {
     border-top: 1px solid #252525;
     padding-top: 10px;
     margin-top: 10px;
+}
+
+.footer-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .highlight-btn {
@@ -391,6 +439,25 @@ header {
 
 .highlight-btn:hover {
     background-color: #b91c1c;
+}
+
+.hints-btn {
+    background: #2a2a2a;
+    border: 1px solid #3f3f46;
+    color: #e0e0e0;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.hints-btn:hover {
+    background: #3f3f46;
+    color: #ffffff;
 }
 
 .card-actions {
