@@ -267,7 +267,7 @@ header {
     font-size: 0.95rem;
     color: #ffffff;
     white-space: nowrap;
-    overflow: visible; /* Displays full name normally by default */
+    overflow: visible;
     text-overflow: clip;
 }
 
@@ -279,6 +279,11 @@ header {
 .team-side.score-visible .team-name {
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.team-side.away.score-visible .team-name {
+    direction: rtl; /* Flips direction for away team so ellipsis cuts off near the badge cleanly */
+    text-align: left;
 }
 
 .scorers {
