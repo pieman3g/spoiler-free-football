@@ -423,75 +423,62 @@ header {
     display: none !important;
 }
 
+/* Slimmer, Cleaner Footer & Compact Action Buttons */
 .card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-top: 1px solid #252525;
-    padding-top: 10px;
-    margin-top: 10px;
+    padding-top: 8px;
+    margin-top: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
 .footer-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+}
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .highlight-btn {
-    background-color: #dc2626;
+    background-color: #b91c1c;
     color: white;
-    padding: 5px 10px;
-    border-radius: 6px;
+    padding: 3px 8px;
+    border-radius: 4px;
     text-decoration: none;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
 }
 
 .highlight-btn:hover {
-    background-color: #b91c1c;
+    background-color: #991b1b;
 }
 
-.hints-btn {
-    background: #2a2a2a;
-    border: 1px solid #3f3f46;
-    color: #e0e0e0;
-    padding: 5px 10px;
-    border-radius: 6px;
+.hints-btn, .reveal-btn, .vote-btn {
+    background: #222225;
+    border: 1px solid #323238;
+    color: #d1d5db;
+    padding: 3px 8px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
     display: inline-flex;
     align-items: center;
     gap: 4px;
 }
 
-.hints-btn:hover {
-    background: #3f3f46;
+.hints-btn:hover, .reveal-btn:hover, .vote-btn:hover {
+    background: #2d2d34;
     color: #ffffff;
-}
-
-.card-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.reveal-btn, .vote-btn {
-    background: #2a2a2a;
-    border: 1px solid #3f3f46;
-    color: #e0e0e0;
-    padding: 5px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.reveal-btn:hover, .vote-btn:hover {
-    background: #3f3f46;
+    border-color: #3f3f46;
 }
 
 .vote-btn.active {
