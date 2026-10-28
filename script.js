@@ -305,15 +305,15 @@ function renderMatches(matches) {
         </div>
       </div>
       
-      <!-- Wikihoops-style Hints Drawer -->
+      <!-- Wikihoops-style Hints Drawer with Clickable Questions -->
       <div class="hints-drawer hidden" id="hints-${match.id}">
         <div class="hint-block">
-          <div class="hint-question"><span class="hint-bullet">•</span> Were there goals?</div>
-          <div class="hint-answer">${match.hasGoalsText}</div>
+          <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> Were there goals?</div>
+          <div class="hint-answer hidden">${match.hasGoalsText}</div>
         </div>
         <div class="hint-block">
-          <div class="hint-question"><span class="hint-bullet">•</span> If there were goals, how many?</div>
-          <div class="hint-answer">${match.howManyGoalsText}</div>
+          <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> If there were goals, how many?</div>
+          <div class="hint-answer hidden">${match.howManyGoalsText}</div>
         </div>
       </div>
 
@@ -364,6 +364,13 @@ function toggleHints(matchId) {
 
   hintsDrawer.classList.toggle('hidden');
   card.classList.toggle('expanded', isHidden);
+}
+
+function toggleSingleHint(questionElement) {
+  const answerElement = questionElement.nextElementSibling;
+  if (answerElement) {
+    answerElement.classList.toggle('hidden');
+  }
 }
 
 function vote(matchId) {
