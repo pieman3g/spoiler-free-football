@@ -78,7 +78,6 @@ async function loadSavedMatches() {
   }
 
   try {
-    // Fetch each saved match directly from ESPN's event endpoint
     const matchPromises = savedMatchIds.map(async (matchId) => {
       const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/all/summary?event=${matchId}`);
       if (!res.ok) return null;
@@ -127,7 +126,16 @@ async function loadSavedMatches() {
       const dateTimeDisplay = `${dayStr} · ${timeStr}`;
 
       const statusState = competition.status?.type?.state;
-      let statusText = statusState === "in" ? `LIVE ${competition.status.type.detail || ''}` : (statusState === "post" ? "FULL TIME" : "SCHEDULED");
+      const isLiveMatch = (statusState === "in");
+      let statusText = '';
+
+      if (isLiveMatch) {
+        const detailText = competition.status?.type?.detail || 'LIVE';
+        statusText = `<span class="pulsing-dot"></span>${detailText}`;
+      } else {
+        statusText = statusState === "post" ? "FULL TIME" : "SCHEDULED";
+      }
+
       const isFinished = (statusState === "post" || statusState === "in");
       const totalGoals = homeScore + awayScore;
       const matchName = `${homeName} vs ${awayName}`;
@@ -143,6 +151,7 @@ async function loadSavedMatches() {
         awayScorers: awayScorersList,
         score: `${homeScore} - ${awayScore}`,
         status: statusText,
+        isLive: isLiveMatch,
         dateTime: dateTimeDisplay,
         hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
@@ -342,7 +351,16 @@ async function loadMatchesForCurrentIndex() {
       
       const matchName = `${homeName} vs ${awayName}`;
       let scoreStr = `${homeScore} - ${awayScore}`;
-      let statusText = state === "in" ? `LIVE ${event.status.type.detail || ''}` : (state === "post" ? "FULL TIME" : "SCHEDULED");
+      
+      const isLiveMatch = (state === "in");
+      let statusText = '';
+
+      if (isLiveMatch) {
+        const detailText = event.status.type.detail || 'LIVE';
+        statusText = `<span class="pulsing-dot"></span>${detailText}`;
+      } else {
+        statusText = state === "post" ? "FULL TIME" : "SCHEDULED";
+      }
 
       const isFinished = (state === "post" || state === "in");
       const totalGoals = homeScore + awayScore;
@@ -358,6 +376,7 @@ async function loadMatchesForCurrentIndex() {
         awayScorers: awayScorersList,
         score: scoreStr,
         status: statusText,
+        isLive: isLiveMatch,
         dateTime: dateTimeDisplay,
         hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
@@ -398,7 +417,7 @@ function renderMatches(matches) {
 
     card.innerHTML = `
       <div class="card-top">
-        <span class="status">${match.status}</span>
+        <span class="status ${match.isLive ? 'live-status' : ''}">${match.status}</span>
         <span>${match.dateTime}</span>
       </div>
       <div class="teams-container">
