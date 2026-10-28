@@ -229,7 +229,6 @@ header {
     align-items: center;
     gap: 10px;
     width: 38%;
-    max-width: 38%; /* Locks column width on mobile */
     min-width: 0;
 }
 
@@ -256,7 +255,6 @@ header {
     flex-direction: column;
     min-width: 0;
     flex: 1;
-    overflow: hidden; /* Enforces boundaries on text inside */
 }
 
 .team-side.away .team-info-block {
@@ -269,10 +267,18 @@ header {
     font-size: 0.95rem;
     color: #ffffff;
     white-space: nowrap;
+    overflow: visible; /* Displays full name normally by default */
+    text-overflow: clip;
+}
+
+/* Dynamic truncation triggered only when scores are visible */
+.team-side.score-visible .team-info-block {
     overflow: hidden;
-    text-overflow: ellipsis; /* Enforces '...' truncation */
-    display: block;
-    width: 100%;
+}
+
+.team-side.score-visible .team-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .scorers {
@@ -309,8 +315,8 @@ header {
     font-size: 1.25rem;
     letter-spacing: 1.5px;
     color: #ffffff;
-    padding-left: 8px;
-    padding-right: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
     white-space: nowrap;
     flex-shrink: 0;
 }
