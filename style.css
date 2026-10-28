@@ -370,7 +370,7 @@ header {
     display: none !important;
 }
 
-/* Wikihoops Hints Drawer Styling */
+/* Wikihoops Hints Drawer Styling (Mobile First / Default) */
 .hints-drawer {
     margin-top: 12px;
     padding-top: 12px;
@@ -422,6 +422,19 @@ header {
 
 .hint-answer.hidden {
     display: none !important;
+}
+
+/* Desktop screen override: smaller hint font size */
+@media (min-width: 769px) {
+    .hint-question {
+        font-size: 0.85rem;
+    }
+    .hint-bullet {
+        font-size: 0.9rem;
+    }
+    .hint-answer {
+        font-size: 0.82rem;
+    }
 }
 
 .card-footer {
