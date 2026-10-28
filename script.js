@@ -198,6 +198,8 @@ async function loadMatchesForCurrentIndex() {
         statusText = "SCHEDULED";
       }
 
+      const isFinished = (state === "post");
+
       return {
         id: matchId,
         teams: matchName,
@@ -208,7 +210,7 @@ async function loadMatchesForCurrentIndex() {
         score: scoreStr,
         status: statusText,
         dateTime: dateTimeDisplay,
-        highlightUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}`,
+        highlightUrl: isFinished ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
         upvotes: 0,
         downvotes: 0
       };
