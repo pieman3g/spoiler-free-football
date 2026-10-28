@@ -6,10 +6,20 @@ const leagueSelect = document.getElementById('league-select');
 const prevBtn = document.getElementById('prev-date-btn');
 const nextBtn = document.getElementById('next-date-btn');
 
-let currentLeague = 'eng.1'; // Default to Premier League
-let matchDates = [];
-let currentMatchDateIndex = -1;
+// Load saved preferences from localStorage or fall back to defaults
+let currentLeague = localStorage.getItem('quiet_pitch_league') || 'eng.1';
+let savedDateIndex = localStorage.getItem('quiet_pitch_date_index');
+let currentMatchDateIndex = savedDateIndex !== null ? parseInt(savedDateIndex) : -1;
 let globalSpoilersRevealed = false;
+
+// Set the dropdown to match the saved league on load and update title
+if (leagueSelect) {
+  leagueSelect.value = currentLeague;
+  const selectedOpt = leagueSelect.options[leagueSelect.selectedIndex];
+  if (selectedOpt && titleEl) {
+    titleEl.textContent = selectedOpt.text;
+  }
+}
 
 function formatDateForParam(date) {
   const yyyy = date.getFullYear();
@@ -76,9 +86,11 @@ function setupInitialDateIndex() {
   const todayStr = formatDateForParam(new Date());
   
   if (matchDates.length > 0) {
-    currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
-    if (currentMatchDateIndex === -1) {
-      currentMatchDateIndex = matchDates.length - 1;
+    if (currentMatchDateIndex === -1 || currentMatchDateIndex >= matchDates.length) {
+      currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
+      if (currentMatchDateIndex === -1) {
+        currentMatchDateIndex = matchDates.length - 1;
+      }
     }
   } else {
     matchDates = [todayStr];
@@ -359,10 +371,16 @@ function updateAllScoresVisibility(show) {
   });
 }
 
-// Event Listeners
+// Event Listeners with localStorage persistence
 if (leagueSelect) {
   leagueSelect.addEventListener('change', (e) => {
     currentLeague = e.target.value;
+    localStorage.setItem('quiet_pitch_league', currentLeague);
+    
+    // Clear date index when league changes so it recalibrates cleanly
+    localStorage.removeItem('quiet_pitch_date_index');
+    currentMatchDateIndex = -1;
+
     const selectedText = e.target.options[e.target.selectedIndex].text;
     if (titleEl) titleEl.textContent = selectedText;
     initCalendar();
@@ -371,12 +389,14 @@ if (leagueSelect) {
 
 dateSelect.addEventListener('change', (e) => {
   currentMatchDateIndex = parseInt(e.target.value);
+  localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
   loadMatchesForCurrentIndex();
 });
 
 prevBtn.addEventListener('click', () => {
   if (currentMatchDateIndex > 0) {
     currentMatchDateIndex--;
+    localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
     loadMatchesForCurrentIndex();
   }
 });
@@ -384,6 +404,7 @@ prevBtn.addEventListener('click', () => {
 nextBtn.addEventListener('click', () => {
   if (currentMatchDateIndex < matchDates.length - 1) {
     currentMatchDateIndex++;
+    localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
     loadMatchesForCurrentIndex();
   }
 });
