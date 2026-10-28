@@ -166,7 +166,7 @@ async function loadMatchesForCurrentIndex() {
       const competitors = competitions.competitors;
       
       let homeName = "Home", awayName = "Away";
-      let homeScore = "0", awayScore = "0";
+      let homeScore = 0, awayScore = 0;
       let homeLogo = "", awayLogo = "";
       let homeScorersList = "";
       let awayScorersList = "";
@@ -176,16 +176,16 @@ async function loadMatchesForCurrentIndex() {
 
       if (homeComp) {
         homeName = homeComp.team.shortDisplayName || homeComp.team.name;
-        homeScore = homeComp.score || "0";
+        homeScore = parseInt(homeComp.score || "0", 10);
         homeLogo = homeComp.team.logo || "";
       }
       if (awayComp) {
         awayName = awayComp.team.shortDisplayName || awayComp.team.name;
-        awayScore = awayComp.score || "0";
+        awayScore = parseInt(awayComp.score || "0", 10);
         awayLogo = awayComp.team.logo || "";
       }
 
-      // Parse goalscorers from ESPN details if available and stack them vertically
+      // Parse goalscorers from ESPN details if available
       if (competitions.details && Array.isArray(competitions.details)) {
         const homeTeamId = homeComp?.team?.id;
         const homeScorers = [];
@@ -211,20 +211,22 @@ async function loadMatchesForCurrentIndex() {
       
       const matchName = `${homeName} vs ${awayName}`;
       
-      let scoreStr = "vs";
+      let scoreStr = `${homeScore} - ${awayScore}`;
       let statusText = "UPCOMING";
       
       if (state === "in") {
-        scoreStr = `${homeScore} - ${awayScore}`;
         statusText = `LIVE ${event.status.type.detail || ''}`;
       } else if (state === "post") {
-        scoreStr = `${homeScore} - ${awayScore}`;
         statusText = "FULL TIME";
       } else {
         statusText = "SCHEDULED";
       }
 
-      const isFinished = (state === "post");
+      const isFinished = (state === "post" || state === "in");
+      const totalGoals = homeScore + awayScore;
+      
+      const hasGoalsAnswer = isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.';
+      const howManyAnswer = isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A';
 
       return {
         id: matchId,
@@ -238,7 +240,9 @@ async function loadMatchesForCurrentIndex() {
         score: scoreStr,
         status: statusText,
         dateTime: dateTimeDisplay,
-        highlightUrl: isFinished ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
+        hasGoalsText: hasGoalsAnswer,
+        howManyGoalsText: howManyAnswer,
+        highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
         upvotes: 0,
         downvotes: 0
       };
@@ -300,11 +304,25 @@ function renderMatches(matches) {
           ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge">` : ''}
         </div>
       </div>
+      
+      <!-- Wikihoops-style Hints Drawer -->
+      <div class="hints-drawer hidden" id="hints-${match.id}">
+        <div class="hint-block">
+          <div class="hint-question"><span class="hint-bullet">•</span> Were there goals?</div>
+          <div class="hint-answer">${match.hasGoalsText}</div>
+        </div>
+        <div class="hint-block">
+          <div class="hint-question"><span class="hint-bullet">•</span> If there were goals, how many?</div>
+          <div class="hint-answer">${match.howManyGoalsText}</div>
+        </div>
+      </div>
+
       <div class="card-footer">
-        <div>
+        <div class="footer-left">
           ${match.highlightUrl && match.highlightUrl !== '#' 
             ? `<a href="${match.highlightUrl}" target="_blank" rel="noopener noreferrer" class="highlight-btn">▶ Highlights</a>` 
-            : '<span style="color:#6b7280; font-size:0.8rem;">No Video</span>'}
+            : '<span style="color:#6b7280; font-size:0.75rem;">No Video</span>'}
+          <button class="hints-btn" onclick="toggleHints(${match.id})">💡 Hints</button>
         </div>
         <div class="card-actions">
           <button class="reveal-btn" onclick="toggleScore(event, ${match.id})">${globalSpoilersRevealed ? 'Hide score' : 'Show score'}</button>
@@ -333,11 +351,19 @@ function toggleScore(event, matchId) {
   if (homeScorers) homeScorers.classList.toggle('hidden');
   if (awayScorers) awayScorers.classList.toggle('hidden');
   
-  // Toggle card expansion and truncation classes smoothly
   card.classList.toggle('expanded', isHidden);
   teamSides.forEach(side => side.classList.toggle('score-visible', isHidden));
   
   btn.textContent = isHidden ? 'Hide score' : 'Show score';
+}
+
+function toggleHints(matchId) {
+  const hintsDrawer = document.getElementById(`hints-${matchId}`);
+  const card = hintsDrawer.closest('.match-card');
+  const isHidden = hintsDrawer.classList.contains('hidden');
+
+  hintsDrawer.classList.toggle('hidden');
+  card.classList.toggle('expanded', isHidden);
 }
 
 function vote(matchId) {
