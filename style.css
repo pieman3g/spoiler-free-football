@@ -281,23 +281,32 @@ header {
     text-overflow: ellipsis;
 }
 
-/* Mobile-only away team truncation keeping badge on the right, text truncating at the end */
+/* Mobile-only away team grid lockdown: badge stays right, text truncates from the right end */
 @media (max-width: 768px) {
     .team-side.away.score-visible {
-        flex-direction: row;
-        justify-content: flex-end;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 32px;
+        gap: 10px;
+        align-items: center;
     }
 
     .team-side.away.score-visible .team-info-block {
+        grid-column: 1;
         align-items: flex-end;
         text-align: right;
         overflow: hidden;
+    }
+
+    .team-side.away.score-visible .team-badge {
+        grid-column: 2;
+        justify-self: end;
     }
 
     .team-side.away.score-visible .team-name {
         overflow: hidden;
         text-overflow: ellipsis;
         text-align: right;
+        width: 100%;
     }
 }
 
@@ -485,3 +494,8 @@ header {
 .modal-btn.continue {
     background: #10b981;
     color: #ffffff;
+}
+
+.modal-btn.continue:hover {
+    background: #059669;
+}
