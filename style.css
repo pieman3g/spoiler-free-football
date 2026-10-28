@@ -230,7 +230,7 @@ header {
     gap: 10px;
     width: 38%;
     min-width: 0;
-    min-height: 48px; /* Locks vertical height to prevent sub-pixel layout shifts */
+    min-height: 48px;
 }
 
 .team-side.home {
@@ -321,6 +321,12 @@ header {
 
 .scorers.hidden {
     display: none !important;
+}
+
+.scorers:empty {
+    display: none !important;
+    margin: 0 !important;
+    height: 0 !important;
 }
 
 .center-area {
