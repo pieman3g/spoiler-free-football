@@ -248,7 +248,7 @@ function renderMatches(matches) {
         <span>${match.dateTime}</span>
       </div>
       <div class="teams-container">
-        <div class="team-side home">
+        <div class="team-side home ${globalSpoilersRevealed ? 'score-visible' : ''}">
           ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge">` : ''}
           <div class="team-info-block">
             <span class="team-name">${match.homeTeam}</span>
@@ -259,7 +259,7 @@ function renderMatches(matches) {
           <span class="vs-divider ${globalSpoilersRevealed ? 'hidden' : ''}" id="vs-${match.id}">vs</span>
           <span class="score ${globalSpoilersRevealed ? '' : 'hidden'}" id="score-${match.id}">${match.score}</span>
         </div>
-        <div class="team-side away">
+        <div class="team-side away ${globalSpoilersRevealed ? 'score-visible' : ''}">
           <div class="team-info-block">
             <span class="team-name">${match.awayTeam}</span>
             <div class="scorers ${globalSpoilersRevealed ? '' : 'hidden'}" id="away-scorers-${match.id}"></div>
@@ -289,6 +289,8 @@ function toggleScore(event, matchId) {
   const vsSpan = document.getElementById(`vs-${matchId}`);
   const homeScorers = document.getElementById(`home-scorers-${matchId}`);
   const awayScorers = document.getElementById(`away-scorers-${matchId}`);
+  const card = event.target.closest('.match-card');
+  const teamSides = card.querySelectorAll('.team-side');
   const btn = event.target;
   
   const isHidden = scoreSpan.classList.contains('hidden');
@@ -297,6 +299,9 @@ function toggleScore(event, matchId) {
   vsSpan.classList.toggle('hidden');
   if (homeScorers) homeScorers.classList.toggle('hidden');
   if (awayScorers) awayScorers.classList.toggle('hidden');
+  
+  // Toggle truncation class dynamically when score is shown/hidden
+  teamSides.forEach(side => side.classList.toggle('score-visible', isHidden));
   
   btn.textContent = isHidden ? 'Hide score' : 'Show score';
 }
@@ -350,6 +355,7 @@ function updateAllScoresVisibility(show) {
   const vsSpans = document.querySelectorAll('.vs-divider');
   const scorersBlocks = document.querySelectorAll('.scorers');
   const revealBtns = document.querySelectorAll('.reveal-btn');
+  const teamSides = document.querySelectorAll('.team-side');
 
   scoreSpans.forEach(el => {
     if (show) el.classList.remove('hidden');
@@ -366,6 +372,11 @@ function updateAllScoresVisibility(show) {
     else el.classList.add('hidden');
   });
 
+  teamSides.forEach(side => {
+    if (show) side.classList.add('score-visible');
+    else side.classList.remove('score-visible');
+  });
+
   revealBtns.forEach(btn => {
     btn.textContent = show ? 'Hide score' : 'Show score';
   });
@@ -377,7 +388,6 @@ if (leagueSelect) {
     currentLeague = e.target.value;
     localStorage.setItem('quiet_pitch_league', currentLeague);
     
-    // Clear date index when league changes so it recalibrates cleanly
     localStorage.removeItem('quiet_pitch_date_index');
     currentMatchDateIndex = -1;
 
@@ -409,5 +419,4 @@ nextBtn.addEventListener('click', () => {
   }
 });
 
-// Initialize Calendar on initial load
 initCalendar();
