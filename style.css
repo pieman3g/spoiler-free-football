@@ -229,6 +229,7 @@ header {
     align-items: center;
     gap: 10px;
     width: 38%;
+    min-width: 0; /* Crucial: allows flex items to shrink safely */
 }
 
 .team-side.home {
@@ -239,17 +240,21 @@ header {
     justify-content: flex-end;
     text-align: right;
 }
+
 .team-badge {
     width: 32px !important;
     height: 32px !important;
     max-width: 32px !important;
     max-height: 32px !important;
     object-fit: contain;
+    flex-shrink: 0;
 }
 
 .team-info-block {
     display: flex;
     flex-direction: column;
+    min-width: 0; /* Allows text truncation to work inside flex children */
+    flex: 1;
 }
 
 .team-side.away .team-info-block {
@@ -261,6 +266,9 @@ header {
     font-weight: 600;
     font-size: 0.95rem;
     color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Truncates long names cleanly with '...' if constrained */
 }
 
 .scorers {
@@ -297,10 +305,10 @@ header {
     font-size: 1.25rem;
     letter-spacing: 1.5px;
     color: #ffffff;
-    /* Solution 2 padding to keep long team names from crowding digits */
     padding-left: 10px;
     padding-right: 10px;
     white-space: nowrap;
+    flex-shrink: 0; /* Prevents the score from compressing */
 }
 
 .score.hidden {
