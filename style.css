@@ -229,7 +229,8 @@ header {
     align-items: center;
     gap: 10px;
     width: 38%;
-    min-width: 0; /* Crucial: allows flex items to shrink safely */
+    max-width: 38%; /* Locks column width on mobile */
+    min-width: 0;
 }
 
 .team-side.home {
@@ -253,8 +254,9 @@ header {
 .team-info-block {
     display: flex;
     flex-direction: column;
-    min-width: 0; /* Allows text truncation to work inside flex children */
+    min-width: 0;
     flex: 1;
+    overflow: hidden; /* Enforces boundaries on text inside */
 }
 
 .team-side.away .team-info-block {
@@ -268,7 +270,9 @@ header {
     color: #ffffff;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Truncates long names cleanly with '...' if constrained */
+    text-overflow: ellipsis; /* Enforces '...' truncation */
+    display: block;
+    width: 100%;
 }
 
 .scorers {
@@ -305,10 +309,10 @@ header {
     font-size: 1.25rem;
     letter-spacing: 1.5px;
     color: #ffffff;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 8px;
+    padding-right: 8px;
     white-space: nowrap;
-    flex-shrink: 0; /* Prevents the score from compressing */
+    flex-shrink: 0;
 }
 
 .score.hidden {
