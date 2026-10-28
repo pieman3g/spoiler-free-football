@@ -281,8 +281,18 @@ header {
     text-overflow: ellipsis;
 }
 
+/* Away team score-visible adjustments to truncate cleanly from the right end */
+.team-side.away.score-visible {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+.team-side.away.score-visible .team-info-block {
+    align-items: flex-start;
+    text-align: left;
+}
+
 .team-side.away.score-visible .team-name {
-    direction: rtl; /* Flips direction for away team so ellipsis cuts off near the badge cleanly */
     text-align: left;
 }
 
