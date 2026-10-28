@@ -11,6 +11,7 @@ let currentLeague = localStorage.getItem('quiet_pitch_league') || 'eng.1';
 let savedDateIndex = localStorage.getItem('quiet_pitch_date_index');
 let currentMatchDateIndex = savedDateIndex !== null ? parseInt(savedDateIndex) : -1;
 let globalSpoilersRevealed = false;
+let matchDates = [];
 
 // Set the dropdown to match the saved league on load and update title
 if (leagueSelect) {
