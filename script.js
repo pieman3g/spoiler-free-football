@@ -7,6 +7,8 @@ const prevBtn = document.getElementById('prev-date-btn');
 const nextBtn = document.getElementById('next-date-btn');
 
 let currentLeague = localStorage.getItem('quiet_pitch_league') || 'eng.1';
+// The last date viewed is remembered by its value (YYYYMMDD), not its position in the list,
+// because the list of dates can change from one visit to the next.
 let savedDate = localStorage.getItem('quiet_pitch_date');
 let currentMatchDateIndex = -1;
 let globalSpoilersRevealed = false;
@@ -179,15 +181,25 @@ async function loadSavedMatches() {
 
 // ---------------------------------------------------------------------------
 // Which days appear in the date dropdown.
+//
+// We only want days that actually have games. ESPN's league "calendar" gives us
+// that for some leagues (like the Premier League), but for others (the European
+// competitions) it is missing, made of rounds rather than days, or lists nearly
+// every day. So:
+//   1. If the calendar is a believable list of match days, use it.
+//   2. Otherwise ask ESPN for every fixture in a window around today (one request)
+//      and keep only the days that have a game. Cached for the rest of the day.
+//   3. If that fails too, fall back to listing every day (the old behaviour).
 // ---------------------------------------------------------------------------
-const FIXTURE_WINDOW_DAYS = 30;
-const FIXTURE_WINDOW_STARTS = [-30, 0, 30];
+const FIXTURE_WINDOW_DAYS_BACK = 45;
+const FIXTURE_WINDOW_DAYS_AHEAD = 60;
 
 function scoreboardUrl(league) {
   return `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard`;
 }
 
 function toParamDate(isoText) {
+  // "2026-11-04T20:00Z" -> "20261104"
   const d = String(isoText || '').substring(0, 10).replace(/-/g, '');
   return /^\d{8}$/.test(d) ? d : null;
 }
@@ -207,19 +219,22 @@ function fallbackDates() {
   return dates;
 }
 
+// Returns a list of match days, or null if the calendar can't be trusted.
 function datesFromCalendar(data) {
   const entries = data && data.leagues && data.leagues[0] && data.leagues[0].calendar;
   if (!Array.isArray(entries) || entries.length === 0) return null;
-  if (!entries.every(e => typeof e === 'string')) return null;
+  if (!entries.every(e => typeof e === 'string')) return null;   // rounds/stages, not days
 
   const dates = [...new Set(entries.map(toParamDate).filter(Boolean))].sort();
   if (dates.length < 5) return null;
 
+  // A calendar that lists nearly every day isn't telling us which days have games.
   const spanDays = daysBetween(dates[0], dates[dates.length - 1]) + 1;
   if (dates.length / spanDays > 0.7) return null;
   return dates;
 }
 
+// Returns the days (YYYYMMDD) that have at least one fixture near today. Throws on network errors.
 async function datesFromFixtures(league) {
   const today = new Date();
   const todayKey = formatDateForParam(today);
@@ -230,47 +245,29 @@ async function datesFromFixtures(league) {
     if (cached && cached.day === todayKey && Array.isArray(cached.dates) && cached.dates.length >= 2) {
       return cached.dates;
     }
-  } catch (e) { /* storage unavailable */ }
+  } catch (e) { /* storage unavailable: just fetch */ }
 
-  const ranges = FIXTURE_WINDOW_STARTS.map(offset => {
-    const from = new Date(today);
-    from.setDate(today.getDate() + offset);
-    const to = new Date(from);
-    to.setDate(from.getDate() + FIXTURE_WINDOW_DAYS - 1);
-    return `${formatDateForParam(from)}-${formatDateForParam(to)}`;
-  });
+  const from = new Date(today);
+  from.setDate(today.getDate() - FIXTURE_WINDOW_DAYS_BACK);
+  const to = new Date(today);
+  to.setDate(today.getDate() + FIXTURE_WINDOW_DAYS_AHEAD);
 
-  const results = await Promise.all(ranges.map(async range => {
-    try {
-      const res = await fetch(`${scoreboardUrl(league)}?dates=${range}`);
-      if (!res.ok) {
-        console.warn(`[QuietPitch] ${league}: fixtures for ${range} failed (HTTP ${res.status})`);
-        return null;
-      }
-      const data = await res.json();
-      return (data.events || []).map(e => toParamDate(e.date)).filter(Boolean);
-    } catch (err) {
-      console.warn(`[QuietPitch] ${league}: fixtures for ${range} failed (${err.message})`);
-      return null;
-    }
-  }));
+  const res = await fetch(`${scoreboardUrl(league)}?dates=${formatDateForParam(from)}-${formatDateForParam(to)}&limit=500`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
 
-  const validResults = results.filter(r => r !== null);
-  if (validResults.length === 0) return [];
+  const dates = [...new Set((data.events || []).map(e => toParamDate(e.date)).filter(Boolean))].sort();
 
-  const dates = [...new Set(validResults.flat())].sort();
-
-  if (dates.length < 2 || daysBetween(dates[0], dates[dates.length - 1]) < 14) {
-    console.warn(`[QuietPitch] ${league}: fixtures looked incomplete (${dates.length} days found), ignoring them`);
-    return [];
-  }
+  // Sanity check: a genuine window of fixtures spans weeks. If we only got a few days back, ESPN
+  // probably ignored the date range, so don't trust it (and don't cache it).
+  if (dates.length < 2 || daysBetween(dates[0], dates[dates.length - 1]) < 14) return [];
 
   try { localStorage.setItem(cacheKey, JSON.stringify({ day: todayKey, dates })); } catch (e) { /* ignore */ }
   return dates;
 }
 
 async function initCalendar() {
-  const league = currentLeague;
+  const league = currentLeague;          // if the user switches league while we wait, drop the late answer
   let dates = null;
   let source = '';
 
@@ -307,6 +304,7 @@ function setupInitialDateIndex() {
 
   if (matchDates.length > 0) {
     if (currentMatchDateIndex === -1 || currentMatchDateIndex >= matchDates.length) {
+      // Prefer the date the user was last looking at, otherwise the next day with games.
       currentMatchDateIndex = savedDate ? matchDates.indexOf(savedDate) : -1;
       if (currentMatchDateIndex === -1) {
         currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
