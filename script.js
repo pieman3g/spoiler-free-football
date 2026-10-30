@@ -7,8 +7,6 @@ const prevBtn = document.getElementById('prev-date-btn');
 const nextBtn = document.getElementById('next-date-btn');
 
 let currentLeague = localStorage.getItem('quiet_pitch_league') || 'eng.1';
-// The last date viewed is remembered by its value (YYYYMMDD), not its position in the list,
-// because the list of dates can change from one visit to the next.
 let savedDate = localStorage.getItem('quiet_pitch_date');
 let currentMatchDateIndex = -1;
 let globalSpoilersRevealed = false;
@@ -700,14 +698,20 @@ function updateAllScoresVisibility(show) {
 
 // About Modal Handlers
 function openAboutModal(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
   const modal = document.getElementById('about-modal');
-  if (modal) modal.classList.remove('hidden');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
 }
 
 function closeAboutModal() {
   const modal = document.getElementById('about-modal');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
 }
 
 if (leagueSelect) {
