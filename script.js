@@ -257,7 +257,6 @@ async function datesFromFixtures(league) {
     }
   }));
 
-  // Filter out failed chunks instead of discarding everything
   const validResults = results.filter(r => r !== null);
   if (validResults.length === 0) return [];
 
@@ -697,6 +696,18 @@ function updateAllScoresVisibility(show) {
   revealBtns.forEach(btn => {
     btn.textContent = show ? 'Hide score' : 'Show score';
   });
+}
+
+// About Modal Handlers
+function openAboutModal(event) {
+  event.preventDefault();
+  const modal = document.getElementById('about-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeAboutModal() {
+  const modal = document.getElementById('about-modal');
+  if (modal) modal.classList.add('hidden');
 }
 
 if (leagueSelect) {
