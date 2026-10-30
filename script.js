@@ -89,8 +89,8 @@ async function loadSavedMatches() {
       const homeComp = competitors.find(c => c.homeAway === "home");
       const awayComp = competitors.find(c => c.homeAway === "away");
 
-      let homeName = homeComp?.team?.shortDisplayName || homeComp?.team?.name || "Home";
-      let awayName = awayComp?.team?.shortDisplayName || awayComp?.team?.name || "Away";
+      let homeName = homeComp?.team?.shortDisplayName || homeComp?.team?.name || homeComp?.team?.displayName || "Home";
+      let awayName = awayComp?.team?.shortDisplayName || awayComp?.team?.name || awayComp?.team?.displayName || "Away";
       let homeScore = parseInt(homeComp?.score || "0", 10);
       let awayScore = parseInt(awayComp?.score || "0", 10);
       let homeLogo = homeComp?.team?.logo || "";
@@ -195,8 +195,6 @@ async function initCalendar() {
 
     matchDates = [...new Set(matchDates)].sort();
 
-    // If the API returns sparse or missing calendar entries (common for cups/Europe off-weeks), 
-    // fallback gracefully to a rolling 60-day window so all dates always show up.
     if (matchDates.length < 5) {
       matchDates = [];
       const today = new Date();
@@ -317,12 +315,12 @@ async function loadMatchesForCurrentIndex() {
       const awayComp = competitors.find(c => c.homeAway === "away");
 
       if (homeComp) {
-        homeName = homeComp.team.shortDisplayName || homeComp.team.name;
+        homeName = homeComp.team.shortDisplayName || homeComp.team.name || homeComp.team.displayName || "Home";
         homeScore = parseInt(homeComp.score || "0", 10);
         homeLogo = homeComp.team.logo || "";
       }
       if (awayComp) {
-        awayName = awayComp.team.shortDisplayName || awayComp.team.name;
+        awayName = awayComp.team.shortDisplayName || awayComp.team.name || awayComp.team.displayName || "Away";
         awayScore = parseInt(awayComp.score || "0", 10);
         awayLogo = awayComp.team.logo || "";
       }
@@ -385,7 +383,7 @@ async function loadMatchesForCurrentIndex() {
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
         isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
         bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
-        highlightUrl: isFinished && statusState === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
+        highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
       };
     });
     
