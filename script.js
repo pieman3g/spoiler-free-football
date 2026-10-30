@@ -179,29 +179,12 @@ async function loadSavedMatches() {
 
 async function initCalendar() {
   try {
-    if (currentLeague.toLowerCase().includes('uefa') || currentLeague === 'eng.fa') {
-      matchDates = [];
-      const today = new Date();
-      
-      for (let i = -14; i <= 45; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        const dayOfWeek = d.getDay();
-        if (dayOfWeek === 2 || dayOfWeek === 3 || dayOfWeek === 4) {
-          matchDates.push(formatDateForParam(d));
-        }
-      }
-
-      setupInitialDateIndex();
-      return;
-    }
-
     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
     const data = await res.json();
     
     const calendarEntries = data.leagues?.[0]?.calendar || [];
     
-    matchDates = calendarEntries.map(entry => {
+    let rawDates = calendarEntries.map(entry => {
       if (typeof entry === 'string') {
         return entry.substring(0, 10).replace(/-/g, '');
       } else if (entry.startDate) {
@@ -210,7 +193,27 @@ async function initCalendar() {
       return null;
     }).filter(Boolean);
 
-    matchDates = [...new Set(matchDates)].sort();
+    rawDates = [...new Set(rawDates)].sort();
+
+    if (currentLeague.toLowerCase().includes('uefa') || currentLeague === 'eng.fa' || currentLeague === 'eng.league_cup') {
+      const activeMatchDates = [];
+      
+      for (const dateStr of rawDates) {
+        try {
+          const checkRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard?dates=${dateStr}`);
+          const checkData = await checkRes.json();
+          if (checkData.events && checkData.events.length > 0) {
+            activeMatchDates.push(dateStr);
+          }
+        } catch (e) {
+          // Skip failed date checks silently
+        }
+      }
+      
+      matchDates = activeMatchDates.length > 0 ? activeMatchDates : rawDates;
+    } else {
+      matchDates = rawDates;
+    }
 
     if (matchDates.length === 0) {
       matchDates = [formatDateForParam(new Date())];
