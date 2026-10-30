@@ -696,24 +696,6 @@ function updateAllScoresVisibility(show) {
   });
 }
 
-// About Modal Handlers
-function openAboutModal(event) {
-  if (event) event.preventDefault();
-  const modal = document.getElementById('about-modal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-  }
-}
-
-function closeAboutModal() {
-  const modal = document.getElementById('about-modal');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-  }
-}
-
 if (leagueSelect) {
   leagueSelect.addEventListener('change', (e) => {
     currentLeague = e.target.value;
