@@ -184,7 +184,7 @@ async function initCalendar() {
     
     const calendarEntries = data.leagues?.[0]?.calendar || [];
     
-    let rawDates = calendarEntries.map(entry => {
+    matchDates = calendarEntries.map(entry => {
       if (typeof entry === 'string') {
         return entry.substring(0, 10).replace(/-/g, '');
       } else if (entry.startDate) {
@@ -193,19 +193,7 @@ async function initCalendar() {
       return null;
     }).filter(Boolean);
 
-    rawDates = [...new Set(rawDates)].sort();
-
-    if (rawDates.length > 5) {
-      matchDates = rawDates;
-    } else {
-      matchDates = [];
-      const today = new Date();
-      for (let i = -30; i <= 30; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        matchDates.push(formatDateForParam(d));
-      }
-    }
+    matchDates = [...new Set(matchDates)].sort();
 
     if (matchDates.length === 0) {
       matchDates = [formatDateForParam(new Date())];
@@ -214,13 +202,7 @@ async function initCalendar() {
     setupInitialDateIndex();
   } catch (err) {
     console.error("Error initializing calendar:", err);
-    matchDates = [];
-    const today = new Date();
-    for (let i = -15; i <= 15; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      matchDates.push(formatDateForParam(d));
-    }
+    matchDates = [formatDateForParam(new Date())];
     setupInitialDateIndex();
   }
 }
