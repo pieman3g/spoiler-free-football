@@ -195,14 +195,28 @@ async function initCalendar() {
 
     matchDates = [...new Set(matchDates)].sort();
 
-    if (matchDates.length === 0) {
-      matchDates = [formatDateForParam(new Date())];
+    // If the API returns sparse or missing calendar entries (common for cups/Europe off-weeks), 
+    // fallback gracefully to a rolling 60-day window so all dates always show up.
+    if (matchDates.length < 5) {
+      matchDates = [];
+      const today = new Date();
+      for (let i = -30; i <= 30; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        matchDates.push(formatDateForParam(d));
+      }
     }
 
     setupInitialDateIndex();
   } catch (err) {
     console.error("Error initializing calendar:", err);
-    matchDates = [formatDateForParam(new Date())];
+    matchDates = [];
+    const today = new Date();
+    for (let i = -30; i <= 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      matchDates.push(formatDateForParam(d));
+    }
     setupInitialDateIndex();
   }
 }
@@ -371,7 +385,7 @@ async function loadMatchesForCurrentIndex() {
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
         isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
         bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
-        highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
+        highlightUrl: isFinished && statusState === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
       };
     });
     
