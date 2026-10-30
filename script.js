@@ -156,7 +156,7 @@ async function loadSavedMatches() {
         isLive: isLiveMatch,
         dateTime: dateTimeDisplay,
         hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
-        howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
+        howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.' : '0 goals.') : 'N/A',
         isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
         bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
         highlightUrl: isFinished && statusState === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
@@ -184,7 +184,7 @@ async function initCalendar() {
     
     const calendarEntries = data.leagues?.[0]?.calendar || [];
     
-    matchDates = calendarEntries.map(entry => {
+    let rawDates = calendarEntries.map(entry => {
       if (typeof entry === 'string') {
         return entry.substring(0, 10).replace(/-/g, '');
       } else if (entry.startDate) {
@@ -193,7 +193,20 @@ async function initCalendar() {
       return null;
     }).filter(Boolean);
 
-    matchDates = [...new Set(matchDates)].sort();
+    rawDates = [...new Set(rawDates)].sort();
+
+    // If ESPN returns a valid full calendar range, use it. Otherwise fallback to a rolling 60-day window.
+    if (rawDates.length > 5) {
+      matchDates = rawDates;
+    } else {
+      matchDates = [];
+      const today = new Date();
+      for (let i = -30; i <= 30; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        matchDates.push(formatDateForParam(d));
+      }
+    }
 
     if (matchDates.length === 0) {
       matchDates = [formatDateForParam(new Date())];
@@ -202,7 +215,13 @@ async function initCalendar() {
     setupInitialDateIndex();
   } catch (err) {
     console.error("Error initializing calendar:", err);
-    matchDates = [formatDateForParam(new Date())];
+    matchDates = [];
+    const today = new Date();
+    for (let i = -15; i <= 15; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      matchDates.push(formatDateForParam(d));
+    }
     setupInitialDateIndex();
   }
 }
