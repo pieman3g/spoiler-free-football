@@ -156,7 +156,7 @@ async function loadSavedMatches() {
         isLive: isLiveMatch,
         dateTime: dateTimeDisplay,
         hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
-        howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.' : '0 goals.') : 'N/A',
+        howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
         isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
         bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
         highlightUrl: isFinished && statusState === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
@@ -195,10 +195,10 @@ async function initCalendar() {
 
     rawDates = [...new Set(rawDates)].sort();
 
-    // If ESPN returns a valid full calendar range, use it. Otherwise fallback to a rolling 60-day window.
-    if (rawDates.length > 5) {
+    if (rawDates.length > 2) {
       matchDates = rawDates;
     } else {
+      // Fallback range if calendar metadata is sparse/missing
       matchDates = [];
       const today = new Date();
       for (let i = -30; i <= 30; i++) {
@@ -208,16 +208,12 @@ async function initCalendar() {
       }
     }
 
-    if (matchDates.length === 0) {
-      matchDates = [formatDateForParam(new Date())];
-    }
-
     setupInitialDateIndex();
   } catch (err) {
     console.error("Error initializing calendar:", err);
     matchDates = [];
     const today = new Date();
-    for (let i = -15; i <= 15; i++) {
+    for (let i = -30; i <= 30; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       matchDates.push(formatDateForParam(d));
@@ -631,26 +627,4 @@ if (leagueSelect) {
   });
 }
 
-dateSelect.addEventListener('change', (e) => {
-  currentMatchDateIndex = parseInt(e.target.value);
-  localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
-  loadMatchesForCurrentIndex();
-});
-
-prevBtn.addEventListener('click', () => {
-  if (currentMatchDateIndex > 0) {
-    currentMatchDateIndex--;
-    localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
-    loadMatchesForCurrentIndex();
-  }
-});
-
-nextBtn.addEventListener('click', () => {
-  if (currentMatchDateIndex < matchDates.length - 1) {
-    currentMatchDateIndex++;
-    localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
-    loadMatchesForCurrentIndex();
-  }
-});
-
-initCalendar();
+dateSelect.addEventListener('change
