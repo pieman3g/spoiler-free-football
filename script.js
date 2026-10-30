@@ -195,24 +195,16 @@ async function initCalendar() {
 
     rawDates = [...new Set(rawDates)].sort();
 
-    if (currentLeague.toLowerCase().includes('uefa') || currentLeague === 'eng.fa' || currentLeague === 'eng.league_cup') {
-      const activeMatchDates = [];
-      
-      for (const dateStr of rawDates) {
-        try {
-          const checkRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard?dates=${dateStr}`);
-          const checkData = await checkRes.json();
-          if (checkData.events && checkData.events.length > 0) {
-            activeMatchDates.push(dateStr);
-          }
-        } catch (e) {
-          // Skip failed date checks silently
-        }
-      }
-      
-      matchDates = activeMatchDates.length > 0 ? activeMatchDates : rawDates;
-    } else {
+    if (rawDates.length > 5) {
       matchDates = rawDates;
+    } else {
+      matchDates = [];
+      const today = new Date();
+      for (let i = -30; i <= 30; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        matchDates.push(formatDateForParam(d));
+      }
     }
 
     if (matchDates.length === 0) {
@@ -222,7 +214,13 @@ async function initCalendar() {
     setupInitialDateIndex();
   } catch (err) {
     console.error("Error initializing calendar:", err);
-    matchDates = [formatDateForParam(new Date())];
+    matchDates = [];
+    const today = new Date();
+    for (let i = -15; i <= 15; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      matchDates.push(formatDateForParam(d));
+    }
     setupInitialDateIndex();
   }
 }
