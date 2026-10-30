@@ -7,8 +7,10 @@ const prevBtn = document.getElementById('prev-date-btn');
 const nextBtn = document.getElementById('next-date-btn');
 
 let currentLeague = localStorage.getItem('quiet_pitch_league') || 'eng.1';
-let savedDateIndex = localStorage.getItem('quiet_pitch_date_index');
-let currentMatchDateIndex = savedDateIndex !== null ? parseInt(savedDateIndex) : -1;
+// The last date viewed is remembered by its value (YYYYMMDD), not its position in the list,
+// because the list of dates can change from one visit to the next.
+let savedDate = localStorage.getItem('quiet_pitch_date');
+let currentMatchDateIndex = -1;
 let globalSpoilersRevealed = false;
 let matchDates = [];
 let currentTab = 'matches';
@@ -177,54 +179,136 @@ async function loadSavedMatches() {
   }
 }
 
-async function initCalendar() {
-  try {
-    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard`);
-    const data = await res.json();
-    
-    const calendarEntries = data.leagues?.[0]?.calendar || [];
-    
-    matchDates = calendarEntries.map(entry => {
-      if (typeof entry === 'string') {
-        return entry.substring(0, 10).replace(/-/g, '');
-      } else if (entry.startDate) {
-        return entry.startDate.substring(0, 10).replace(/-/g, '');
-      }
-      return null;
-    }).filter(Boolean);
+// ---------------------------------------------------------------------------
+// Which days appear in the date dropdown.
+//
+// We only want days that actually have games. ESPN's league "calendar" gives us
+// that for some leagues (like the Premier League), but for others (the European
+// competitions) it is missing, made of rounds rather than days, or lists nearly
+// every day. So:
+//   1. If the calendar is a believable list of match days, use it.
+//   2. Otherwise ask ESPN for every fixture in a window around today (one request)
+//      and keep only the days that have a game. Cached for the rest of the day.
+//   3. If that fails too, fall back to listing every day (the old behaviour).
+// ---------------------------------------------------------------------------
+const FIXTURE_WINDOW_DAYS_BACK = 45;
+const FIXTURE_WINDOW_DAYS_AHEAD = 60;
 
-    matchDates = [...new Set(matchDates)].sort();
+function scoreboardUrl(league) {
+  return `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard`;
+}
 
-    if (matchDates.length < 5) {
-      matchDates = [];
-      const today = new Date();
-      for (let i = -30; i <= 30; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        matchDates.push(formatDateForParam(d));
-      }
-    }
+function toParamDate(isoText) {
+  // "2026-11-04T20:00Z" -> "20261104"
+  const d = String(isoText || '').substring(0, 10).replace(/-/g, '');
+  return /^\d{8}$/.test(d) ? d : null;
+}
 
-    setupInitialDateIndex();
-  } catch (err) {
-    console.error("Error initializing calendar:", err);
-    matchDates = [];
-    const today = new Date();
-    for (let i = -30; i <= 30; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      matchDates.push(formatDateForParam(d));
-    }
-    setupInitialDateIndex();
+function daysBetween(firstParam, lastParam) {
+  return Math.round((parseParamDate(lastParam) - parseParamDate(firstParam)) / 86400000);
+}
+
+function fallbackDates() {
+  const dates = [];
+  const today = new Date();
+  for (let i = -30; i <= 30; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    dates.push(formatDateForParam(d));
   }
+  return dates;
+}
+
+// Returns a list of match days, or null if the calendar can't be trusted.
+function datesFromCalendar(data) {
+  const entries = data && data.leagues && data.leagues[0] && data.leagues[0].calendar;
+  if (!Array.isArray(entries) || entries.length === 0) return null;
+  if (!entries.every(e => typeof e === 'string')) return null;   // rounds/stages, not days
+
+  const dates = [...new Set(entries.map(toParamDate).filter(Boolean))].sort();
+  if (dates.length < 5) return null;
+
+  // A calendar that lists nearly every day isn't telling us which days have games.
+  const spanDays = daysBetween(dates[0], dates[dates.length - 1]) + 1;
+  if (dates.length / spanDays > 0.7) return null;
+  return dates;
+}
+
+// Returns the days (YYYYMMDD) that have at least one fixture near today. Throws on network errors.
+async function datesFromFixtures(league) {
+  const today = new Date();
+  const todayKey = formatDateForParam(today);
+  const cacheKey = `quiet_pitch_dates_${league}`;
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached && cached.day === todayKey && Array.isArray(cached.dates) && cached.dates.length >= 2) {
+      return cached.dates;
+    }
+  } catch (e) { /* storage unavailable: just fetch */ }
+
+  const from = new Date(today);
+  from.setDate(today.getDate() - FIXTURE_WINDOW_DAYS_BACK);
+  const to = new Date(today);
+  to.setDate(today.getDate() + FIXTURE_WINDOW_DAYS_AHEAD);
+
+  const res = await fetch(`${scoreboardUrl(league)}?dates=${formatDateForParam(from)}-${formatDateForParam(to)}&limit=500`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+
+  const dates = [...new Set((data.events || []).map(e => toParamDate(e.date)).filter(Boolean))].sort();
+
+  // Sanity check: a genuine window of fixtures spans weeks. If we only got a few days back, ESPN
+  // probably ignored the date range, so don't trust it (and don't cache it).
+  if (dates.length < 2 || daysBetween(dates[0], dates[dates.length - 1]) < 14) return [];
+
+  try { localStorage.setItem(cacheKey, JSON.stringify({ day: todayKey, dates })); } catch (e) { /* ignore */ }
+  return dates;
+}
+
+async function initCalendar() {
+  const league = currentLeague;          // if the user switches league while we wait, drop the late answer
+  let dates = null;
+  let source = '';
+
+  try {
+    const res = await fetch(scoreboardUrl(league));
+    const data = await res.json();
+    if (league !== currentLeague) return;
+    dates = datesFromCalendar(data);
+    if (dates) source = 'ESPN calendar';
+  } catch (err) {
+    console.error('Error reading calendar:', err);
+  }
+
+  if (!dates) {
+    try {
+      const found = await datesFromFixtures(league);
+      if (league !== currentLeague) return;
+      if (found.length) { dates = found; source = 'fixtures'; }
+    } catch (err) {
+      console.error('Error reading fixtures:', err);
+    }
+  }
+
+  if (league !== currentLeague) return;
+  if (!dates) { dates = fallbackDates(); source = 'every day (fallback)'; }
+
+  matchDates = dates;
+  console.info(`[QuietPitch] ${league}: ${dates.length} dates from ${source}`);
+  setupInitialDateIndex();
 }
 
 function setupInitialDateIndex() {
   const todayStr = formatDateForParam(new Date());
-  
+
   if (matchDates.length > 0) {
     if (currentMatchDateIndex === -1 || currentMatchDateIndex >= matchDates.length) {
-      currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
+      // Prefer the date the user was last looking at, otherwise the next day with games.
+      currentMatchDateIndex = savedDate ? matchDates.indexOf(savedDate) : -1;
+      if (currentMatchDateIndex === -1) {
+        currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
+      }
       if (currentMatchDateIndex === -1) {
         currentMatchDateIndex = matchDates.length - 1;
       }
@@ -233,11 +317,16 @@ function setupInitialDateIndex() {
     matchDates = [todayStr];
     currentMatchDateIndex = 0;
   }
-  
+
   populateDropdown();
   if (currentTab === 'matches') {
     loadMatchesForCurrentIndex();
   }
+}
+
+function rememberDate() {
+  savedDate = matchDates[currentMatchDateIndex] || null;
+  if (savedDate) localStorage.setItem('quiet_pitch_date', savedDate);
 }
 
 function populateDropdown() {
@@ -610,7 +699,8 @@ if (leagueSelect) {
     currentLeague = e.target.value;
     localStorage.setItem('quiet_pitch_league', currentLeague);
     
-    localStorage.removeItem('quiet_pitch_date_index');
+    localStorage.removeItem('quiet_pitch_date');
+    savedDate = null;
     currentMatchDateIndex = -1;
 
     const selectedText = e.target.options[e.target.selectedIndex].text;
@@ -626,14 +716,14 @@ if (leagueSelect) {
 
 dateSelect.addEventListener('change', (e) => {
   currentMatchDateIndex = parseInt(e.target.value);
-  localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
+  rememberDate();
   loadMatchesForCurrentIndex();
 });
 
 prevBtn.addEventListener('click', () => {
   if (currentMatchDateIndex > 0) {
     currentMatchDateIndex--;
-    localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
+    rememberDate();
     loadMatchesForCurrentIndex();
   }
 });
@@ -641,7 +731,7 @@ prevBtn.addEventListener('click', () => {
 nextBtn.addEventListener('click', () => {
   if (currentMatchDateIndex < matchDates.length - 1) {
     currentMatchDateIndex++;
-    localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
+    rememberDate();
     loadMatchesForCurrentIndex();
   }
 });
