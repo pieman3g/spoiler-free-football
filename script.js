@@ -184,7 +184,7 @@ async function initCalendar() {
     
     const calendarEntries = data.leagues?.[0]?.calendar || [];
     
-    let rawDates = calendarEntries.map(entry => {
+    matchDates = calendarEntries.map(entry => {
       if (typeof entry === 'string') {
         return entry.substring(0, 10).replace(/-/g, '');
       } else if (entry.startDate) {
@@ -193,31 +193,16 @@ async function initCalendar() {
       return null;
     }).filter(Boolean);
 
-    rawDates = [...new Set(rawDates)].sort();
+    matchDates = [...new Set(matchDates)].sort();
 
-    if (rawDates.length > 2) {
-      matchDates = rawDates;
-    } else {
-      // Fallback range if calendar metadata is sparse/missing
-      matchDates = [];
-      const today = new Date();
-      for (let i = -30; i <= 30; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        matchDates.push(formatDateForParam(d));
-      }
+    if (matchDates.length === 0) {
+      matchDates = [formatDateForParam(new Date())];
     }
 
     setupInitialDateIndex();
   } catch (err) {
     console.error("Error initializing calendar:", err);
-    matchDates = [];
-    const today = new Date();
-    for (let i = -30; i <= 30; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      matchDates.push(formatDateForParam(d));
-    }
+    matchDates = [formatDateForParam(new Date())];
     setupInitialDateIndex();
   }
 }
@@ -627,4 +612,26 @@ if (leagueSelect) {
   });
 }
 
-dateSelect.addEventListener('change
+dateSelect.addEventListener('change', (e) => {
+  currentMatchDateIndex = parseInt(e.target.value);
+  localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
+  loadMatchesForCurrentIndex();
+});
+
+prevBtn.addEventListener('click', () => {
+  if (currentMatchDateIndex > 0) {
+    currentMatchDateIndex--;
+    localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
+    loadMatchesForCurrentIndex();
+  }
+});
+
+nextBtn.addEventListener('click', () => {
+  if (currentMatchDateIndex < matchDates.length - 1) {
+    currentMatchDateIndex++;
+    localStorage.setItem('quiet_pitch_date_index', currentMatchDateIndex);
+    loadMatchesForCurrentIndex();
+  }
+});
+
+initCalendar();
