@@ -138,6 +138,8 @@ async function loadSavedMatches() {
 
       const isFinished = (statusState === "post" || statusState === "in");
       const totalGoals = homeScore + awayScore;
+      const isDraw = homeScore === awayScore;
+      const btts = (homeScore > 0 && awayScore > 0);
       const matchName = `${homeName} vs ${awayName}`;
 
       return {
@@ -155,6 +157,8 @@ async function loadSavedMatches() {
         dateTime: dateTimeDisplay,
         hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
+        isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
+        bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
         highlightUrl: isFinished && statusState === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
       };
     });
@@ -364,6 +368,8 @@ async function loadMatchesForCurrentIndex() {
 
       const isFinished = (state === "post" || state === "in");
       const totalGoals = homeScore + awayScore;
+      const isDraw = homeScore === awayScore;
+      const btts = (homeScore > 0 && awayScore > 0);
       
       return {
         id: matchId,
@@ -380,6 +386,8 @@ async function loadMatchesForCurrentIndex() {
         dateTime: dateTimeDisplay,
         hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
+        isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
+        bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
         highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
       };
     });
@@ -449,6 +457,14 @@ function renderMatches(matches) {
         <div class="hint-block">
           <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> If there were goals, how many?</div>
           <div class="hint-answer hidden">${match.howManyGoalsText}</div>
+        </div>
+        <div class="hint-block">
+          <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> Was it a draw?</div>
+          <div class="hint-answer hidden">${match.isDrawText}</div>
+        </div>
+        <div class="hint-block">
+          <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> Did both teams score?</div>
+          <div class="hint-answer hidden">${match.bttsText}</div>
         </div>
       </div>
 
