@@ -643,3 +643,87 @@ header {
 .modal-btn.continue:hover {
     background: #059669;
 }
+
+/* Footer About Link Style */
+.footer-about-link {
+  background: none;
+  border: none;
+  color: #10b981;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.footer-about-link:hover {
+  opacity: 0.8;
+}
+
+/* About Modal Styling (Matching Dark Theme) */
+dialog.about-dialog {
+  border: 1px solid #3a3a42;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 440px;
+  width: 90%;
+  margin: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  background: #202024;
+  color: #e0e0e0;
+}
+
+dialog.about-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(2px);
+}
+
+.about-dialog .modal-content {
+  padding: 22px 24px;
+  text-align: left;
+}
+
+.about-dialog .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.about-dialog .modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.about-dialog .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0;
+  line-height: 1;
+}
+
+.about-dialog .close-btn:hover {
+  color: #ffffff;
+}
+
+.about-dialog h4 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9ca3af;
+  margin-top: 18px;
+  margin-bottom: 6px;
+}
+
+.about-dialog p {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #9ca3af;
+  margin: 0 0 10px 0;
+}
