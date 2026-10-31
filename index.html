@@ -73,6 +73,9 @@
         <!-- Trademark & Unofficial Disclaimer Footer -->
         <footer class="site-footer">
             QuietPitch is an unofficial, fan-made dashboard. All team names, logos, and trademarks are the property of their respective owners. Data provided via public APIs.
+            <div style="margin-top: 0.5rem;">
+                <button id="about-btn" class="footer-about-link">About & Privacy</button>
+            </div>
         </footer>
     </div>
 
@@ -94,6 +97,45 @@
         </div>
     </div>
 
+    <!-- Native About & Privacy Modal Dialog -->
+    <dialog id="about-modal" class="about-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>About QuietPitch</h3>
+          <button id="close-about-modal" class="close-btn">&times;</button>
+        </div>
+        <p>
+          <strong>QuietPitch</strong> is a spoiler-free football dashboard designed for fans who can't watch matches live. Check subtle 💡 Hints for context without ruining the score, or save matches to your personal archive.
+        </p>
+        <h4>Privacy & Data</h4>
+        <p>
+          No tracking cookies, no third-party analytics, and no ads. All your settings and bookmarks stay strictly local to your browser.
+        </p>
+      </div>
+    </dialog>
+
+    <script>
+      // Simple script to handle the About Modal
+      const aboutModal = document.getElementById('about-modal');
+      const aboutBtn = document.getElementById('about-btn');
+      const closeAboutBtn = document.getElementById('close-about-modal');
+
+      aboutBtn.addEventListener('click', () => aboutModal.showModal());
+      closeAboutBtn.addEventListener('click', () => aboutModal.close());
+      
+      // Close when clicking outside the modal box
+      aboutModal.addEventListener('click', (e) => {
+        const dialogDimensions = aboutModal.getBoundingClientRect();
+        if (
+          e.clientX < dialogDimensions.left ||
+          e.clientX > dialogDimensions.right ||
+          e.clientY < dialogDimensions.top ||
+          e.clientY > dialogDimensions.bottom
+        ) {
+          aboutModal.close();
+        }
+      });
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
