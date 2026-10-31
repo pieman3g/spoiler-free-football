@@ -3,96 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuietPitch - Spoiler-Free Football Dashboard</title>
+    <title>QuietPitch — Spoiler-Free Football</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'></circle><polygon points='12 7 15.5 9.5 14 13.5 10 13.5 8.5 9.5 12 7'></polygon><line x1='12' y1='2' x2='12' y2='7'></line><line x1='15.5' y1='9.5' x2='20' y2='7.5'></line><line x1='14' y1='13.5' x2='17.5' y2='18'></line><line x1='10' y1='13.5' x2='6.5' y2='18'></line><line x1='8.5' y1='9.5' x2='4' y2='7.5'></line></svg>">
 </head>
 <body>
-    <div class="container">
-        <!-- Header / Branding -->
-        <header>
-            <div class="brand">
-                <div class="brand-logo-container">
-                    <svg class="brand-goal-svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polygon points="12 7 15.5 9.5 14 13.5 10 13.5 8.5 9.5 12 7"></polygon>
-                        <line x1="12" y1="2" x2="12" y2="7"></line>
-                        <line x1="15.5" y1="9.5" x2="20" y2="7.5"></line>
-                        <line x1="14" y1="13.5" x2="17.5" y2="18"></line>
-                        <line x1="10" y1="13.5" x2="6.5" y2="18"></line>
-                        <line x1="8.5" y1="9.5" x2="4" y2="7.5"></line>
-                    </svg>
-                </div>
-                <span><span class="quiet">Quiet</span><span class="pitch">Pitch</span></span>
-            </div>
-            <button id="global-spoiler-toggle" class="spoiler-toggle-badge" onclick="handleGlobalSpoilerClick()">
-                Spoilers: <span id="spoiler-state-text">hidden</span>
-            </button>
-        </header>
+    <header>
+        <h1>QuietPitch</h1>
+        <p class="subtitle">Find out which matches are worth watching without ruining the scores.</p>
+    </header>
 
-        <!-- Main Navigation Tabs -->
-        <nav class="nav-tabs">
-            <a class="nav-tab active" id="tab-matches" onclick="switchTab('matches')">Matches</a>
-            <a class="nav-tab" id="tab-watchability" onclick="switchTab('watchability')">Watchability</a>
-            <a class="nav-tab" id="tab-saved" onclick="switchTab('saved')">Saved</a>
-        </nav>
+    <!-- About Section -->
+    <section class="about-section">
+      <details>
+        <summary>About QuietPitch</summary>
+        <div class="about-content">
+          <p>
+            <strong>QuietPitch</strong> is a spoiler-free football dashboard designed for fans who can't watch matches live. Check subtle 💡 Hints for context without ruining the score, or save matches to your personal archive.
+          </p>
+          <h3>Privacy & Data</h3>
+          <p>
+            No tracking cookies, no third-party analytics, and no ads. All your settings and bookmarks stay strictly local to your browser.
+          </p>
+        </div>
+      </details>
+    </section>
 
-        <h2 class="section-title">Premier League</h2>
-        <p class="section-subtitle">Loading matches...</p>
-
-        <!-- Competition Selector Dropdown -->
-        <div class="competition-selector-bar">
-            <span class="selector-label">League / Competition:</span>
-            <select id="league-select" class="league-dropdown">
-                <option value="eng.1">Premier League</option>
-                <option value="eng.2">Championship</option>
-                <option value="eng.fa">FA Cup</option>
-                <option value="eng.league_cup">EFL Cup</option>
-                <option value="uefa.champions">UEFA Champions League</option>
-                <option value="uefa.europa">UEFA Europa League</option>
-                <option value="esp.1">La Liga</option>
-                <option value="ger.1">Bundesliga</option>
-                <option value="ita.1">Serie A</option>
-                <option value="fra.1">Ligue 1</option>
-            </select>
+    <main>
+        <div id="filters-container">
+            <!-- Filter elements (competition, date, rating, etc.) will go here -->
         </div>
 
-        <!-- Date Controls Dropdown & Nav -->
-        <div class="date-picker-bar">
-            <button id="prev-date-btn" class="date-nav-btn" aria-label="Previous Day">&lt;</button>
-            <select id="date-select" class="date-dropdown"></select>
-            <button id="next-date-btn" class="date-nav-btn" aria-label="Next Day">&gt;</button>
+        <div id="matches-container">
+            <!-- Match cards will be dynamically loaded here by script.js -->
+            <p class="loading">Loading matches...</p>
         </div>
+    </main>
 
-        <!-- Matches Container -->
-        <main id="matches-container">
-            <!-- Dynamic Match Cards Render Here -->
-        </main>
-
-        <!-- Trademark & Unofficial Disclaimer Footer -->
-        <footer class="site-footer">
-            QuietPitch is an unofficial, fan-made dashboard. All team names, logos, and trademarks are the property of their respective owners. Data provided via public APIs.
-        </footer>
-    </div>
-
-    <!-- Global Reveal All Confirmation Modal Overlay -->
-    <div id="spoiler-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h3>Reveal All Scores?</h3>
-            <p>This will show all final scores and goalscorers across every match on the current page. Are you sure you want to reveal spoilers?</p>
-            
-            <label class="modal-checkbox-label">
-                <input type="checkbox" id="dont-ask-checkbox">
-                Don't ask me again on this device
-            </label>
-
-            <div class="modal-actions">
-                <button class="modal-btn cancel" onclick="closeSpoilerModal()">Cancel</button>
-                <button class="modal-btn continue" onclick="confirmRevealAll()">Reveal Scores</button>
-            </div>
-        </div>
-    </div>
+    <footer>
+        <p>&copy; 2026 QuietPitch</p>
+    </footer>
 
     <script src="script.js"></script>
 </body>
