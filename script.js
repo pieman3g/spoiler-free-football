@@ -7,15 +7,11 @@ const prevBtn = document.getElementById('prev-date-btn');
 const nextBtn = document.getElementById('next-date-btn');
 
 let currentLeague = localStorage.getItem('quiet_pitch_league') || 'eng.1';
-// The last date viewed is remembered by its value (YYYYMMDD), not its position in the list,
-// because the list of dates can change from one visit to the next.
 let savedDate = localStorage.getItem('quiet_pitch_date');
 let currentMatchDateIndex = -1;
 let globalSpoilersRevealed = false;
 let matchDates = [];
 let currentTab = 'matches';
-
-// State tracker for table spoiler reveal
 let isTableRevealed = false;
 
 if (leagueSelect) {
@@ -43,10 +39,15 @@ function parseParamDate(dateStr) {
 function switchTab(tabName) {
   currentTab = tabName;
   
-  document.getElementById('tab-matches').classList.toggle('active', tabName === 'matches');
-  document.getElementById('tab-saved').classList.toggle('active', tabName === 'saved');
-  document.getElementById('tab-watchability').classList.toggle('active', tabName === 'watchability');
-  document.getElementById('tab-table').classList.toggle('active', tabName === 'table');
+  const tabMatches = document.getElementById('tab-matches');
+  const tabSaved = document.getElementById('tab-saved');
+  const tabWatch = document.getElementById('tab-watchability');
+  const tabTable = document.getElementById('tab-table');
+
+  if (tabMatches) tabMatches.classList.toggle('active', tabName === 'matches');
+  if (tabSaved) tabSaved.classList.toggle('active', tabName === 'saved');
+  if (tabWatch) tabWatch.classList.toggle('active', tabName === 'watchability');
+  if (tabTable) tabTable.classList.toggle('active', tabName === 'table');
 
   const datePickerBar = document.querySelector('.date-picker-bar');
   const competitionBar = document.querySelector('.competition-selector-bar');
@@ -65,12 +66,12 @@ function switchTab(tabName) {
     if (competitionBar) competitionBar.style.display = 'flex';
     if (tableContainer) tableContainer.classList.add('hidden');
     if (container) container.style.display = 'block';
-    const selectedOpt = leagueSelect.options[leagueSelect.selectedIndex];
+    const selectedOpt = leagueSelect ? leagueSelect.options[leagueSelect.selectedIndex] : null;
     if (selectedOpt && titleEl) titleEl.textContent = selectedOpt.text;
     loadMatchesForCurrentIndex();
   } else if (tabName === 'table') {
     if (datePickerBar) datePickerBar.style.display = 'none';
-    if (competitionBar) competitionBar.style.display = 'flex'; // Allow switching league while viewing table
+    if (competitionBar) competitionBar.style.display = 'flex';
     if (container) container.style.display = 'none';
     if (titleEl) titleEl.textContent = 'Table';
     if (subtitleEl) subtitleEl.textContent = 'Standings and club performance context';
@@ -85,17 +86,18 @@ function switchTab(tabName) {
     if (container) container.style.display = 'block';
     if (titleEl) titleEl.textContent = 'Watchability Feed';
     if (subtitleEl) subtitleEl.textContent = 'Coming soon...';
-    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Watchability curation view is under construction.</p>';
+    if (container) container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Watchability curation view is under construction.</p>';
   }
 }
 
-// Render either the warning card or the standings table
 function renderTableSection() {
   const tableContainer = document.getElementById('table-container');
   if (!tableContainer) return;
 
   const selectedLeagueSelect = document.getElementById('league-select');
-  const leagueName = selectedLeagueSelect ? selectedLeagueSelect.options[selectedLeagueSelect.selectedIndex].text : 'Premier League';
+  const leagueName = selectedLeagueSelect && selectedLeagueSelect.selectedIndex >= 0 
+    ? selectedLeagueSelect.options[selectedLeagueSelect.selectedIndex].text 
+    : 'Premier League';
 
   if (!isTableRevealed) {
     tableContainer.innerHTML = `
@@ -119,11 +121,10 @@ function revealTable() {
   renderTableSection();
 }
 
-// Render the standings table with crests and core stats
 function fetchAndRenderStandings(leagueName) {
   const tableContainer = document.getElementById('table-container');
+  if (!tableContainer) return;
   
-  // Standings data matching the design spec
   const standingsData = [
     { rank: 1, badge: 'https://crests.football-data.org/65.png', name: 'Man City', p: 8, w: 7, d: 0, l: 1, gd: '+11', pts: 21 },
     { rank: 2, badge: 'https://crests.football-data.org/57.png', name: 'Arsenal', p: 8, w: 7, d: 0, l: 1, gd: '+8', pts: 21 },
@@ -183,6 +184,7 @@ function fetchAndRenderStandings(leagueName) {
 }
 
 async function loadSavedMatches() {
+  if (!container) return;
   container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Loading saved matches...</p>';
   
   const savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
@@ -293,9 +295,6 @@ async function loadSavedMatches() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Which days appear in the date dropdown.
-// ---------------------------------------------------------------------------
 const FIXTURE_WINDOW_DAYS_BACK = 45;
 const FIXTURE_WINDOW_DAYS_AHEAD = 60;
 
@@ -428,6 +427,7 @@ function rememberDate() {
 }
 
 function populateDropdown() {
+  if (!dateSelect) return;
   dateSelect.innerHTML = '';
   const todayStr = formatDateForParam(new Date());
 
@@ -444,6 +444,7 @@ function populateDropdown() {
 }
 
 function updateNavButtons() {
+  if (!prevBtn || !nextBtn) return;
   prevBtn.disabled = currentMatchDateIndex <= 0;
   nextBtn.disabled = currentMatchDateIndex >= matchDates.length - 1;
   prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
@@ -455,7 +456,7 @@ async function loadMatchesForCurrentIndex() {
   if (currentMatchDateIndex < 0 || currentMatchDateIndex >= matchDates.length) return;
   
   const dateStr = matchDates[currentMatchDateIndex];
-  dateSelect.value = currentMatchDateIndex;
+  if (dateSelect) dateSelect.value = currentMatchDateIndex;
   updateNavButtons();
 
   const dateObj = parseParamDate(dateStr);
@@ -470,7 +471,7 @@ async function loadMatchesForCurrentIndex() {
     const formattedHeaderDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     
     if (!events || events.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No matches scheduled for this date.</p>';
+      if (container) container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No matches scheduled for this date.</p>';
       if (subtitleEl) subtitleEl.textContent = `0 matches on ${formattedHeaderDate}`;
       return;
     }
@@ -582,6 +583,7 @@ async function loadMatchesForCurrentIndex() {
 }
 
 async function loadFallbackMatches() {
+  if (!container) return;
   try {
     const response = await fetch('matches.json?t=' + new Date().getTime());
     const matches = await response.json();
@@ -593,6 +595,7 @@ async function loadFallbackMatches() {
 }
 
 function renderMatches(matches) {
+  if (!container) return;
   container.innerHTML = '';
   const savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
 
@@ -814,26 +817,33 @@ if (leagueSelect) {
   });
 }
 
-dateSelect.addEventListener('change', (e) => {
-  currentMatchDateIndex = parseInt(e.target.value);
-  rememberDate();
-  loadMatchesForCurrentIndex();
-});
-
-prevBtn.addEventListener('click', () => {
-  if (currentMatchDateIndex > 0) {
-    currentMatchDateIndex--;
+if (dateSelect) {
+  dateSelect.addEventListener('change', (e) => {
+    currentMatchDateIndex = parseInt(e.target.value);
     rememberDate();
     loadMatchesForCurrentIndex();
-  }
-});
+  });
+}
 
-nextBtn.addEventListener('click', () => {
-  if (currentMatchDateIndex < matchDates.length - 1) {
-    currentMatchDateIndex++;
-    rememberDate();
-    loadMatchesForCurrentIndex();
-  }
-});
+if (prevBtn) {
+  prevBtn.addEventListener('click', () => {
+    if (currentMatchDateIndex > 0) {
+      currentMatchDateIndex--;
+      rememberDate();
+      loadMatchesForCurrentIndex();
+    }
+  });
+}
 
+if (nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    if (currentMatchDateIndex < matchDates.length - 1) {
+      currentMatchDateIndex++;
+      rememberDate();
+      loadMatchesForCurrentIndex();
+    }
+  });
+}
+
+// Start app data fetch on load
 initCalendar();
