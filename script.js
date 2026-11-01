@@ -138,7 +138,6 @@ async function loadLeagueTable() {
       const losses = getStat(['losses', 'l']) ?? '-';
       const pts = getStat(['points', 'pts']) ?? '-';
 
-      // Explicitly compute GD from Goals For minus Goals Against
       const gf = getStat(['goalsFor', 'gf', 'pointsFor']);
       const ga = getStat(['goalsAgainst', 'ga', 'pointsAgainst']);
       
@@ -155,7 +154,7 @@ async function loadLeagueTable() {
 
       const teamInfo = entry.team || {};
       const teamName = teamInfo.shortDisplayName || teamInfo.name || teamInfo.displayName || 'Team';
-      const teamLogo = teamInfo.logo || '';
+      const teamLogo = teamInfo.logos?.[0]?.href || teamInfo.logo || (Array.isArray(teamInfo.logos) ? teamInfo.logos[0] : '');
 
       tableHtml += `
         <tr>
