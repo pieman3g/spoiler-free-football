@@ -1,836 +1,738 @@
-const container = document.getElementById('matches-container');
-const subtitleEl = document.querySelector('.section-subtitle');
-const titleEl = document.querySelector('.section-title');
-const dateSelect = document.getElementById('date-select');
-const leagueSelect = document.getElementById('league-select');
-const prevBtn = document.getElementById('prev-date-btn');
-const nextBtn = document.getElementById('next-date-btn');
-const todayBtn = document.getElementById('today-btn');
-
-let currentLeague = localStorage.getItem('quiet_pitch_league') || 'eng.1';
-let savedDate = localStorage.getItem('quiet_pitch_date');
-let currentMatchDateIndex = -1;
-let globalSpoilersRevealed = false;
-let matchDates = [];
-let currentTab = 'matches';
-
-if (leagueSelect) {
-  leagueSelect.value = currentLeague;
-  const selectedOpt = leagueSelect.options[leagueSelect.selectedIndex];
-  if (selectedOpt && titleEl) {
-    titleEl.textContent = selectedOpt.text;
-  }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    margin: 0;
+    padding: 20px;
 }
 
-function formatDateForParam(date) {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  return `${yyyy}${mm}${dd}`;
+.container {
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-function parseParamDate(dateStr) {
-  const y = parseInt(dateStr.substring(0, 4));
-  const m = parseInt(dateStr.substring(4, 6)) - 1;
-  const d = parseInt(dateStr.substring(6, 8));
-  return new Date(y, m, d);
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 15px;
 }
 
-function switchTab(tabName) {
-  currentTab = tabName;
-  
-  document.getElementById('tab-matches').classList.toggle('active', tabName === 'matches');
-  document.getElementById('tab-watchability').classList.toggle('active', tabName === 'watchability');
-  document.getElementById('tab-table').classList.toggle('active', tabName === 'table');
-  document.getElementById('tab-saved').classList.toggle('active', tabName === 'saved');
-
-  const datePickerBar = document.querySelector('.date-picker-bar');
-  const competitionBar = document.querySelector('.competition-selector-bar');
-  
-  if (tabName === 'saved') {
-    if (datePickerBar) datePickerBar.style.display = 'none';
-    if (competitionBar) competitionBar.style.display = 'flex';
-    if (titleEl) titleEl.textContent = 'Saved Matches';
-    if (subtitleEl) subtitleEl.textContent = 'Your bookmarked matches archive';
-    loadSavedMatches();
-  } else if (tabName === 'table') {
-    if (datePickerBar) datePickerBar.style.display = 'none';
-    if (competitionBar) competitionBar.style.display = 'flex';
-    const selectedOpt = leagueSelect.options[leagueSelect.selectedIndex];
-    if (selectedOpt && titleEl) titleEl.textContent = `${selectedOpt.text} Standings`;
-    if (subtitleEl) subtitleEl.textContent = 'Live competition league table';
-    loadLeagueTable();
-  } else if (tabName === 'matches') {
-    if (datePickerBar) datePickerBar.style.display = 'flex';
-    if (competitionBar) competitionBar.style.display = 'flex';
-    const selectedOpt = leagueSelect.options[leagueSelect.selectedIndex];
-    if (selectedOpt && titleEl) titleEl.textContent = selectedOpt.text;
-    loadMatchesForCurrentIndex();
-  } else {
-    if (datePickerBar) datePickerBar.style.display = 'none';
-    if (competitionBar) competitionBar.style.display = 'none';
-    if (titleEl) titleEl.textContent = 'Watchability Feed';
-    if (subtitleEl) subtitleEl.textContent = 'Coming soon...';
-    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Watchability curation view is under construction.</p>';
-  }
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
-async function loadLeagueTable() {
-  container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Loading league table...</p>';
+.brand-logo-container {
+    display: flex;
+    align-items: center;
+}
 
-  try {
-    const res = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${currentLeague}/standings`);
-    if (!res.ok) throw new Error("Failed to fetch standings");
-    const data = await res.json();
+.brand-goal-svg {
+    display: block;
+}
 
-    let standingsEntries = [];
-    const children = data.children || data.standings?.entries || [];
-    
-    if (data.standings && Array.isArray(data.standings)) {
-      standingsEntries = data.standings;
-    } else if (children.length > 0 && children[0].standings) {
-      standingsEntries = children[0].standings.entries || children[0].standings;
-    } else if (Array.isArray(children)) {
-      standingsEntries = children;
+.quiet {
+    color: #ffffff;
+}
+
+.pitch {
+    color: #10b981;
+}
+
+.spoiler-toggle-badge {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.spoiler-toggle-badge:hover {
+    background: #2a2a2a;
+}
+
+.spoiler-toggle-badge.active {
+    background: #10b981;
+    border-color: #10b981;
+    color: #000000;
+    font-weight: 600;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.nav-tab {
+    color: #9ca3af;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.nav-tab.active {
+    color: #ffffff;
+    font-weight: 500;
+    border-bottom: 2px solid #ffffff;
+    padding-bottom: 10px;
+    margin-bottom: -11px;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #ffffff;
+}
+
+.section-subtitle {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    margin-bottom: 15px;
+}
+
+/* Competition Selector Styling */
+.competition-selector-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.selector-label {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.league-dropdown {
+    flex: 1;
+    background: #1e1e22;
+    border: 1px solid #3a3a3e;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+}
+
+.league-dropdown:hover {
+    background-color: #28282c;
+}
+
+/* Date Controls Styling */
+.date-picker-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.date-nav-btn {
+    background: #242427;
+    border: 1px solid #3a3a3e;
+    color: #e0e0e0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.date-nav-btn:hover {
+    background: #3a3a3e;
+    color: #ffffff;
+}
+
+.date-nav-btn:disabled {
+    cursor: not-allowed;
+    background: #1c1c1f;
+    border-color: #2a2a2e;
+}
+
+/* Today Jump Button Styling */
+.today-jump-btn {
+    width: auto !important;
+    border-radius: 20px !important;
+    padding: 0 14px;
+    font-size: 0.82rem !important;
+    font-weight: 600;
+}
+
+.date-dropdown {
+    flex: 1;
+    background: #242427;
+    border: 1px solid #3a3a3e;
+    color: #ffffff;
+    padding: 9px 14px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239CA3AF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 10px;
+}
+
+.date-dropdown:hover {
+    background-color: #2d2d31;
+}
+
+/* Match Card Layout & Wikihoops Expansion Transition */
+.match-card {
+    background: #202024;
+    border: 1px solid #2f2f35;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    transition: all 0.25s ease-in-out;
+}
+
+.match-card.expanded {
+    background: #26262c;
+    border-color: #484852;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.card-top {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-top .status {
+    color: #ffffff;
+}
+
+/* Pulsing Live Dot & Badge Styling */
+.status.live-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.pulsing-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #ef4444;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+    animation: pulse-animation 1.5s infinite;
+}
+
+@keyframes pulse-animation {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+.teams-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.team-side {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 38%;
+    min-width: 0;
+}
+
+.team-side.home {
+    justify-content: flex-start;
+}
+
+.team-side.away {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.team-badge {
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.team-info-block {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+    justify-content: flex-start;
+}
+
+.team-side.away .team-info-block {
+    align-items: flex-end;
+    text-align: right;
+}
+
+.team-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 32px;
+}
+
+/* Dynamic truncation triggered only when scores are visible */
+.team-side.score-visible .team-info-block {
+    overflow: hidden;
+}
+
+.team-side.score-visible .team-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Mobile-only away team grid lockdown */
+@media (max-width: 768px) {
+    .team-side.away.score-visible {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 32px;
+        gap: 10px;
+        align-items: start;
     }
 
-    if (!standingsEntries || standingsEntries.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Standings not available for this competition.</p>';
-      return;
+    .team-side.away.score-visible .team-info-block {
+        grid-column: 1;
+        align-items: flex-end;
+        text-align: right;
+        overflow: hidden;
     }
 
-    let tableHtml = `
-      <div class="table-responsive">
-        <table class="standings-table">
-          <thead>
-            <tr>
-              <th class="pos-col">#</th>
-              <th class="team-col">Team</th>
-              <th>P</th>
-              <th>W</th>
-              <th>D</th>
-              <th>L</th>
-              <th>GD</th>
-              <th>Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    standingsEntries.forEach((entry, index) => {
-      const stats = entry.stats || [];
-      const getStat = (name) => {
-        const s = stats.find(item => item.name === name || item.type === name);
-        return s ? s.value : '-';
-      };
-
-      const pos = getStat('rank') || getStat('overallRank') || (index + 1);
-      const played = getStat('gamesPlayed');
-      const wins = getStat('wins');
-      const draws = getStat('ties');
-      const losses = getStat('losses');
-      const gd = getStat('goalDifferential');
-      const pts = getStat('points');
-
-      const teamInfo = entry.team || {};
-      const teamName = teamInfo.shortDisplayName || teamInfo.name || teamInfo.displayName || 'Team';
-      const teamLogo = teamInfo.logo || '';
-
-      tableHtml += `
-        <tr>
-          <td class="pos-col">${pos}</td>
-          <td class="team-col">
-            <div class="table-team-cell">
-              ${teamLogo ? `<img src="${teamLogo}" alt="" class="table-badge">` : ''}
-              <span>${teamName}</span>
-            </div>
-          </td>
-          <td>${played}</td>
-          <td>${wins}</td>
-          <td>${draws}</td>
-          <td>${losses}</td>
-          <td>${gd > 0 ? '+' + gd : gd}</td>
-          <td class="pts-col">${pts}</td>
-        </tr>
-      `;
-    });
-
-    tableHtml += `
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    container.innerHTML = tableHtml;
-  } catch (err) {
-    console.error("Error loading standings:", err);
-    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Unable to load league table for this competition.</p>';
-  }
-}
-
-async function loadSavedMatches() {
-  container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Loading saved matches...</p>';
-  
-  const savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
-  const savedMatchIds = Object.keys(savedVotes).filter(id => savedVotes[id] === 1);
-
-  if (savedMatchIds.length === 0) {
-    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No saved matches yet. Click the "★ Save" button on any match card to archive it here!</p>';
-    return;
-  }
-
-  try {
-    const matchPromises = savedMatchIds.map(async (matchId) => {
-      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/all/summary?event=${matchId}`);
-      if (!res.ok) return null;
-      const data = await res.json();
-      const competition = data.header?.competitions?.[0];
-      if (!competition) return null;
-
-      const competitors = competition.competitors || [];
-      const homeComp = competitors.find(c => c.homeAway === "home");
-      const awayComp = competitors.find(c => c.homeAway === "away");
-
-      let homeName = homeComp?.team?.shortDisplayName || homeComp?.team?.name || homeComp?.team?.displayName || "Home";
-      let awayName = awayComp?.team?.shortDisplayName || awayComp?.team?.name || awayComp?.team?.displayName || "Away";
-      let homeScore = parseInt(homeComp?.score || "0", 10);
-      let awayScore = parseInt(awayComp?.score || "0", 10);
-      let homeLogo = homeComp?.team?.logo || "";
-      let awayLogo = awayComp?.team?.logo || "";
-
-      let homeScorersList = "";
-      let awayScorersList = "";
-      if (data.details && Array.isArray(data.details)) {
-        const homeTeamId = homeComp?.team?.id;
-        const homeScorers = [];
-        const awayScorers = [];
-
-        data.details.forEach(detail => {
-          if (detail.scoringPlay && detail.athletesInvolved && detail.athletesInvolved.length > 0) {
-            const scorerName = detail.athletesInvolved[0].shortName || detail.athletesInvolved[0].displayName;
-            const minute = detail.clock?.displayValue || '';
-            const scorerText = `${scorerName} ${minute}'`;
-
-            if (detail.team?.id === homeTeamId) {
-              homeScorers.push(scorerText);
-            } else {
-              awayScorers.push(scorerText);
-            }
-          }
-        });
-        homeScorersList = homeScorers.join('<br>');
-        awayScorersList = awayScorers.join('<br>');
-      }
-
-      const matchDateObj = new Date(competition.date || data.header?.competitions?.[0]?.date);
-      const dayStr = matchDateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-      const timeStr = matchDateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-      const dateTimeDisplay = `${dayStr} · ${timeStr}`;
-
-      const statusState = competition.status?.type?.state;
-      const isLiveMatch = (statusState === "in");
-      let statusText = '';
-
-      if (isLiveMatch) {
-        const detailText = competition.status?.type?.detail || 'LIVE';
-        statusText = `<span class="pulsing-dot"></span>${detailText}`;
-      } else {
-        statusText = statusState === "post" ? "FULL TIME" : "SCHEDULED";
-      }
-
-      const isFinished = (statusState === "post" || statusState === "in");
-      const totalGoals = homeScore + awayScore;
-      const isDraw = homeScore === awayScore;
-      const btts = (homeScore > 0 && awayScore > 0);
-      const matchName = `${homeName} vs ${awayName}`;
-
-      return {
-        id: matchId,
-        teams: matchName,
-        homeTeam: homeName,
-        awayTeam: awayName,
-        homeLogo: homeLogo,
-        awayLogo: awayLogo,
-        homeScorers: homeScorersList,
-        awayScorers: awayScorersList,
-        score: `${homeScore} - ${awayScore}`,
-        status: statusText,
-        isLive: isLiveMatch,
-        dateTime: dateTimeDisplay,
-        hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
-        howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
-        isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
-        bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
-        highlightUrl: isFinished && statusState === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
-      };
-    });
-
-    const resolvedMatches = (await Promise.all(matchPromises)).filter(Boolean);
-
-    if (resolvedMatches.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Could not retrieve saved matches from the server.</p>';
-      return;
+    .team-side.away.score-visible .team-badge {
+        grid-column: 2;
+        justify-self: end;
     }
 
-    renderMatches(resolvedMatches);
-  } catch (err) {
-    console.error("Error loading saved matches:", err);
-    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Could not load saved matches.</p>';
-  }
-}
-
-// Calendar logic
-const FIXTURE_WINDOW_DAYS_BACK = 45;
-const FIXTURE_WINDOW_DAYS_AHEAD = 60;
-
-function scoreboardUrl(league) {
-  return `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard`;
-}
-
-function toParamDate(isoText) {
-  const d = String(isoText || '').substring(0, 10).replace(/-/g, '');
-  return /^\d{8}$/.test(d) ? d : null;
-}
-
-function daysBetween(firstParam, lastParam) {
-  return Math.round((parseParamDate(lastParam) - parseParamDate(firstParam)) / 86400000);
-}
-
-function fallbackDates() {
-  const dates = [];
-  const today = new Date();
-  for (let i = -30; i <= 30; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    dates.push(formatDateForParam(d));
-  }
-  return dates;
-}
-
-function datesFromCalendar(data) {
-  const entries = data && data.leagues && data.leagues[0] && data.leagues[0].calendar;
-  if (!Array.isArray(entries) || entries.length === 0) return null;
-  if (!entries.every(e => typeof e === 'string')) return null;
-
-  const dates = [...new Set(entries.map(toParamDate).filter(Boolean))].sort();
-  if (dates.length < 5) return null;
-
-  const spanDays = daysBetween(dates[0], dates[dates.length - 1]) + 1;
-  if (dates.length / spanDays > 0.7) return null;
-  return dates;
-}
-
-async function datesFromFixtures(league) {
-  const today = new Date();
-  const todayKey = formatDateForParam(today);
-  const cacheKey = `quiet_pitch_dates_${league}`;
-
-  try {
-    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if (cached && cached.day === todayKey && Array.isArray(cached.dates) && cached.dates.length >= 2) {
-      return cached.dates;
+    .team-side.away.score-visible .team-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: right;
+        width: 100%;
     }
-  } catch (e) { /* ignore */ }
-
-  const from = new Date(today);
-  from.setDate(today.getDate() - FIXTURE_WINDOW_DAYS_BACK);
-  const to = new Date(today);
-  to.setDate(today.getDate() + FIXTURE_WINDOW_DAYS_AHEAD);
-
-  const res = await fetch(`${scoreboardUrl(league)}?dates=${formatDateForParam(from)}-${formatDateForParam(to)}&limit=500`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-
-  const dates = [...new Set((data.events || []).map(e => toParamDate(e.date)).filter(Boolean))].sort();
-  if (dates.length < 2 || daysBetween(dates[0], dates[dates.length - 1]) < 14) return [];
-
-  try { localStorage.setItem(cacheKey, JSON.stringify({ day: todayKey, dates })); } catch (e) { /* ignore */ }
-  return dates;
 }
 
-async function initCalendar() {
-  const league = currentLeague;
-  let dates = null;
-  let source = '';
+.scorers {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 2px;
+    line-height: 1.4;
+}
 
-  try {
-    const res = await fetch(scoreboardUrl(league));
-    const data = await res.json();
-    if (league !== currentLeague) return;
-    dates = datesFromCalendar(data);
-    if (dates) source = 'ESPN calendar';
-  } catch (err) {
-    console.error('Error reading calendar:', err);
-  }
+.scorers.hidden {
+    display: none !important;
+}
 
-  if (!dates) {
-    try {
-      const found = await datesFromFixtures(league);
-      if (league !== currentLeague) return;
-      if (found.length) { dates = found; source = 'fixtures'; }
-    } catch (err) {
-      console.error('Error reading fixtures:', err);
+.scorers:empty {
+    display: none !important;
+    margin: 0 !important;
+    height: 0 !important;
+}
+
+.center-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+    height: 32px;
+}
+
+.vs-divider {
+    color: #6b7280;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.vs-divider.hidden {
+    display: none !important;
+}
+
+.score {
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 1.25rem;
+    letter-spacing: 1.5px;
+    color: #ffffff;
+    padding-left: 10px;
+    padding-right: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.score.hidden {
+    display: none !important;
+}
+
+/* Wikihoops Hints Drawer Styling (Mobile First / Default) */
+.hints-drawer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #3a3a42;
+    font-size: 0.85rem;
+    color: #9ca3af;
+    line-height: 1.5;
+}
+
+.hints-drawer.hidden {
+    display: none !important;
+}
+
+.hint-block {
+    margin-bottom: 8px;
+}
+
+.hint-block:last-child {
+    margin-bottom: 0;
+}
+
+.hint-question {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.92rem;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease;
+}
+
+.hint-question:hover {
+    color: #10b981;
+}
+
+.hint-bullet {
+    color: #10b981;
+    font-size: 1.05rem;
+}
+
+.hint-answer {
+    margin-left: 18px;
+    margin-top: 3px;
+    color: #d1d5db;
+    font-size: 0.88rem;
+}
+
+.hint-answer.hidden {
+    display: none !important;
+}
+
+/* Desktop screen override: smaller hint font size */
+@media (min-width: 769px) {
+    .hint-question {
+        font-size: 0.85rem;
     }
-  }
-
-  if (league !== currentLeague) return;
-  if (!dates) { dates = fallbackDates(); source = 'every day (fallback)'; }
-
-  matchDates = dates;
-  setupInitialDateIndex();
-}
-
-function setupInitialDateIndex() {
-  const todayStr = formatDateForParam(new Date());
-
-  if (matchDates.length > 0) {
-    if (currentMatchDateIndex === -1 || currentMatchDateIndex >= matchDates.length) {
-      currentMatchDateIndex = savedDate ? matchDates.indexOf(savedDate) : -1;
-      if (currentMatchDateIndex === -1) {
-        currentMatchDateIndex = matchDates.findIndex(d => d >= todayStr);
-      }
-      if (currentMatchDateIndex === -1) {
-        currentMatchDateIndex = matchDates.length - 1;
-      }
+    .hint-bullet {
+        font-size: 0.9rem;
     }
-  } else {
-    matchDates = [todayStr];
-    currentMatchDateIndex = 0;
-  }
-
-  populateDropdown();
-  if (currentTab === 'matches') {
-    loadMatchesForCurrentIndex();
-  }
-}
-
-function rememberDate() {
-  savedDate = matchDates[currentMatchDateIndex] || null;
-  if (savedDate) localStorage.setItem('quiet_pitch_date', savedDate);
-}
-
-function populateDropdown() {
-  dateSelect.innerHTML = '';
-  const todayStr = formatDateForParam(new Date());
-
-  matchDates.forEach((dateStr, idx) => {
-    const d = parseParamDate(dateStr);
-    const option = document.createElement('option');
-    option.value = idx;
-
-    const formattedLabel = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    option.textContent = (dateStr === todayStr) ? `Today (${formattedLabel})` : formattedLabel;
-
-    dateSelect.appendChild(option);
-  });
-}
-
-function updateNavButtons() {
-  prevBtn.disabled = currentMatchDateIndex <= 0;
-  nextBtn.disabled = currentMatchDateIndex >= matchDates.length - 1;
-  prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
-  nextBtn.style.opacity = nextBtn.disabled ? "0.4" : "1";
-}
-
-async function loadMatchesForCurrentIndex() {
-  if (currentTab !== 'matches') return;
-  if (currentMatchDateIndex < 0 || currentMatchDateIndex >= matchDates.length) return;
-  
-  const dateStr = matchDates[currentMatchDateIndex];
-  dateSelect.value = currentMatchDateIndex;
-  updateNavButtons();
-
-  const dateObj = parseParamDate(dateStr);
-
-  try {
-    const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${currentLeague}/scoreboard?dates=${dateStr}`);
-    if (!response.ok) throw new Error("Failed to fetch live data");
-    
-    const data = await response.json();
-    const events = data.events || [];
-    
-    const formattedHeaderDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    
-    if (!events || events.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No matches scheduled for this date.</p>';
-      if (subtitleEl) subtitleEl.textContent = `0 matches on ${formattedHeaderDate}`;
-      return;
+    .hint-answer {
+        font-size: 0.82rem;
     }
-
-    if (subtitleEl) {
-      subtitleEl.textContent = `${events.length} match${events.length === 1 ? '' : 'es'} on ${formattedHeaderDate}`;
-    }
-
-    const matches = events.map(event => {
-      const matchId = event.id;
-      const statusType = event.status.type;
-      const state = statusType.state; 
-      
-      const matchDateObj = new Date(event.date);
-      const dayStr = matchDateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-      const timeStr = matchDateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-      const dateTimeDisplay = `${dayStr} · ${timeStr}`;
-
-      const competitions = event.competitions[0];
-      const competitors = competitions.competitors;
-      
-      let homeName = "Home", awayName = "Away";
-      let homeScore = 0, awayScore = 0;
-      let homeLogo = "", awayLogo = "";
-      let homeScorersList = "";
-      let awayScorersList = "";
-      
-      const homeComp = competitors.find(c => c.homeAway === "home");
-      const awayComp = competitors.find(c => c.homeAway === "away");
-
-      if (homeComp) {
-        homeName = homeComp.team.shortDisplayName || homeComp.team.name || homeComp.team.displayName || "Home";
-        homeScore = parseInt(homeComp.score || "0", 10);
-        homeLogo = homeComp.team.logo || "";
-      }
-      if (awayComp) {
-        awayName = awayComp.team.shortDisplayName || awayComp.team.name || awayComp.team.displayName || "Away";
-        awayScore = parseInt(awayComp.score || "0", 10);
-        awayLogo = awayComp.team.logo || "";
-      }
-
-      if (competitions.details && Array.isArray(competitions.details)) {
-        const homeTeamId = homeComp?.team?.id;
-        const homeScorers = [];
-        const awayScorers = [];
-
-        competitions.details.forEach(detail => {
-          if (detail.scoringPlay && detail.athletesInvolved && detail.athletesInvolved.length > 0) {
-            const scorerName = detail.athletesInvolved[0].shortName || detail.athletesInvolved[0].displayName;
-            const minute = detail.clock?.displayValue || '';
-            const scorerText = `${scorerName} ${minute}'`;
-
-            if (detail.team?.id === homeTeamId) {
-              homeScorers.push(scorerText);
-            } else {
-              awayScorers.push(scorerText);
-            }
-          }
-        });
-
-        homeScorersList = homeScorers.join('<br>');
-        awayScorersList = awayScorers.join('<br>');
-      }
-      
-      const matchName = `${homeName} vs ${awayName}`;
-      let scoreStr = `${homeScore} - ${awayScore}`;
-      
-      const isLiveMatch = (state === "in");
-      let statusText = '';
-
-      if (isLiveMatch) {
-        const detailText = event.status.type.detail || 'LIVE';
-        statusText = `<span class="pulsing-dot"></span>${detailText}`;
-      } else {
-        statusText = state === "post" ? "FULL TIME" : "SCHEDULED";
-      }
-
-      const isFinished = (state === "post" || state === "in");
-      const totalGoals = homeScore + awayScore;
-      const isDraw = homeScore === awayScore;
-      const btts = (homeScore > 0 && awayScore > 0);
-      
-      return {
-        id: matchId,
-        teams: matchName,
-        homeTeam: homeName,
-        awayTeam: awayName,
-        homeLogo: homeLogo,
-        awayLogo: awayLogo,
-        homeScorers: homeScorersList,
-        awayScorers: awayScorersList,
-        score: scoreStr,
-        status: statusText,
-        isLive: isLiveMatch,
-        dateTime: dateTimeDisplay,
-        hasGoalsText: isFinished ? (totalGoals > 0 ? 'Yes.' : 'No (0-0 draw / scoreless).') : 'Match not started yet.',
-        howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
-        isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
-        bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
-        highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
-      };
-    });
-    
-    renderMatches(matches);
-  } catch (error) {
-    console.error("Error loading live matches:", error);
-    loadFallbackMatches();
-  }
 }
 
-async function loadFallbackMatches() {
-  try {
-    const response = await fetch('matches.json?t=' + new Date().getTime());
-    const matches = await response.json();
-    if (subtitleEl) subtitleEl.textContent = `${matches.length} matches found`;
-    renderMatches(matches);
-  } catch (err) {
-    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Unable to load matches.</p>';
-  }
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #2d2d34;
+    padding-top: 8px;
+    margin-top: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
-function renderMatches(matches) {
-  container.innerHTML = '';
-  const savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
-
-  matches.forEach(match => {
-    const userVote = savedVotes[match.id] || 0;
-
-    const card = document.createElement('div');
-    card.classList.add('match-card');
-    if (globalSpoilersRevealed) {
-      card.classList.add('expanded');
-    }
-
-    card.innerHTML = `
-      <div class="card-top">
-        <span class="status ${match.isLive ? 'live-status' : ''}">${match.status}</span>
-        <span>${match.dateTime}</span>
-      </div>
-      <div class="teams-container">
-        <div class="team-side home ${globalSpoilersRevealed ? 'score-visible' : ''}">
-          ${match.homeLogo ? `<img src="${match.homeLogo}" alt="" class="team-badge">` : ''}
-          <div class="team-info-block">
-            <span class="team-name">${match.homeTeam}</span>
-            <div class="scorers ${globalSpoilersRevealed ? '' : 'hidden'}" id="home-scorers-${match.id}">${match.homeScorers || ''}</div>
-          </div>
-        </div>
-        <div class="center-area">
-          <span class="vs-divider ${globalSpoilersRevealed ? 'hidden' : ''}" id="vs-${match.id}">vs</span>
-          <span class="score ${globalSpoilersRevealed ? '' : 'hidden'}" id="score-${match.id}">${match.score}</span>
-        </div>
-        <div class="team-side away ${globalSpoilersRevealed ? 'score-visible' : ''}">
-          <div class="team-info-block">
-            <span class="team-name">${match.awayTeam}</span>
-            <div class="scorers ${globalSpoilersRevealed ? '' : 'hidden'}" id="away-scorers-${match.id}">${match.awayScorers || ''}</div>
-          </div>
-          ${match.awayLogo ? `<img src="${match.awayLogo}" alt="" class="team-badge">` : ''}
-        </div>
-      </div>
-      
-      <div class="hints-drawer hidden" id="hints-${match.id}">
-        <div class="hint-block">
-          <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> Were there goals?</div>
-          <div class="hint-answer hidden">${match.hasGoalsText}</div>
-        </div>
-        <div class="hint-block">
-          <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> If there were goals, how many?</div>
-          <div class="hint-answer hidden">${match.howManyGoalsText}</div>
-        </div>
-        <div class="hint-block">
-          <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> Was it a draw?</div>
-          <div class="hint-answer hidden">${match.isDrawText}</div>
-        </div>
-        <div class="hint-block">
-          <div class="hint-question" onclick="toggleSingleHint(this)"><span class="hint-bullet">•</span> Did both teams score?</div>
-          <div class="hint-answer hidden">${match.bttsText}</div>
-        </div>
-      </div>
-
-      <div class="card-footer">
-        <div class="footer-left">
-          ${match.highlightUrl && match.highlightUrl !== '#' 
-            ? `<a href="${match.highlightUrl}" target="_blank" rel="noopener noreferrer" class="highlight-btn">▶ Highlights</a>` 
-            : '<span style="color:#6b7280; font-size:0.7rem;">No Video</span>'}
-          <button class="hints-btn" onclick="toggleHints(${match.id})">💡 Hints</button>
-        </div>
-        <div class="card-actions">
-          <button class="reveal-btn" onclick="toggleScore(event, ${match.id})">${globalSpoilersRevealed ? 'Hide score' : 'Show score'}</button>
-          <button class="vote-btn ${userVote === 1 ? 'active' : ''}" onclick="vote(${match.id})">★ Save</button>
-        </div>
-      </div>
-    `;
-
-    container.appendChild(card);
-  });
+.footer-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-function toggleScore(event, matchId) {
-  const scoreSpan = document.getElementById(`score-${matchId}`);
-  const vsSpan = document.getElementById(`vs-${matchId}`);
-  const homeScorers = document.getElementById(`home-scorers-${matchId}`);
-  const awayScorers = document.getElementById(`away-scorers-${matchId}`);
-  const card = event.target.closest('.match-card');
-  const teamSides = card.querySelectorAll('.team-side');
-  const btn = event.target;
-  
-  const isHidden = scoreSpan.classList.contains('hidden');
-
-  scoreSpan.classList.toggle('hidden');
-  vsSpan.classList.toggle('hidden');
-  if (homeScorers) homeScorers.classList.toggle('hidden');
-  if (awayScorers) awayScorers.classList.toggle('hidden');
-  
-  card.classList.toggle('expanded', isHidden);
-  teamSides.forEach(side => side.classList.toggle('score-visible', isHidden));
-  
-  btn.textContent = isHidden ? 'Hide score' : 'Show score';
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-function toggleHints(matchId) {
-  const hintsDrawer = document.getElementById(`hints-${matchId}`);
-  const card = hintsDrawer.closest('.match-card');
-  const isHidden = hintsDrawer.classList.contains('hidden');
-
-  hintsDrawer.classList.toggle('hidden');
-  card.classList.toggle('expanded', isHidden);
+.highlight-btn {
+    background-color: #b91c1c;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.7rem;
+    font-weight: 500;
 }
 
-function toggleSingleHint(questionElement) {
-  const answerElement = questionElement.nextElementSibling;
-  if (answerElement) {
-    answerElement.classList.toggle('hidden');
-  }
+.highlight-btn:hover {
+    background-color: #991b1b;
 }
 
-function vote(matchId) {
-  let savedVotes = JSON.parse(localStorage.getItem('spoiler_free_votes')) || {};
-  savedVotes[matchId] = savedVotes[matchId] === 1 ? 0 : 1;
-  localStorage.setItem('spoiler_free_votes', JSON.stringify(savedVotes));
-  
-  if (currentTab === 'saved') {
-    loadSavedMatches();
-  } else if (currentTab === 'matches') {
-    loadMatchesForCurrentIndex();
-  }
+.hints-btn, .reveal-btn, .vote-btn {
+    background: #2a2a30;
+    border: 1px solid #3c3c44;
+    color: #d1d5db;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
-function handleGlobalSpoilerClick() {
-  if (globalSpoilersRevealed) {
-    globalSpoilersRevealed = false;
-    document.getElementById('spoiler-state-text').textContent = 'hidden';
-    document.getElementById('global-spoiler-toggle').classList.remove('active');
-    updateAllScoresVisibility(false);
-  } else {
-    const dontAsk = localStorage.getItem('spoiler_dont_ask') === 'true';
-    if (dontAsk) {
-      revealAllScores();
-    } else {
-      document.getElementById('spoiler-modal').classList.remove('hidden');
-    }
-  }
+.hints-btn:hover, .reveal-btn:hover, .vote-btn:hover {
+    background: #35353d;
+    color: #ffffff;
+    border-color: #4a4a55;
 }
 
-function closeSpoilerModal() {
-  document.getElementById('spoiler-modal').classList.add('hidden');
+.vote-btn.active {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
 }
 
-function confirmRevealAll() {
-  const dontAskChecked = document.getElementById('dont-ask-checkbox').checked;
-  if (dontAskChecked) {
-    localStorage.setItem('spoiler_dont_ask', 'true');
-  }
-  closeSpoilerModal();
-  revealAllScores();
+/* Site Footer / Disclaimer Styling */
+.site-footer {
+    text-align: center;
+    font-size: 0.7rem;
+    color: #6b7280;
+    margin-top: 30px;
+    border-top: 1px solid #2a2a2a;
+    padding-top: 15px;
+    line-height: 1.4;
 }
 
-function revealAllScores() {
-  globalSpoilersRevealed = true;
-  document.getElementById('spoiler-state-text').textContent = 'shown';
-  document.getElementById('global-spoiler-toggle').classList.add('active');
-  updateAllScoresVisibility(true);
+/* Modal Overlay & Centering Fix */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
 
-function updateAllScoresVisibility(show) {
-  const cards = document.querySelectorAll('.match-card');
-  const scoreSpans = document.querySelectorAll('.score');
-  const vsSpans = document.querySelectorAll('.vs-divider');
-  const scorersBlocks = document.querySelectorAll('.scorers');
-  const revealBtns = document.querySelectorAll('.reveal-btn');
-  const teamSides = document.querySelectorAll('.team-side');
-
-  cards.forEach(card => {
-    if (show) card.classList.add('expanded');
-    else card.classList.remove('expanded');
-  });
-
-  scoreSpans.forEach(el => {
-    if (show) el.classList.remove('hidden');
-    else el.classList.add('hidden');
-  });
-
-  vsSpans.forEach(el => {
-    if (show) el.classList.add('hidden');
-    else el.classList.remove('hidden');
-  });
-
-  scorersBlocks.forEach(el => {
-    if (show) el.classList.remove('hidden');
-    else el.classList.add('hidden');
-  });
-
-  teamSides.forEach(side => {
-    if (show) side.classList.add('score-visible');
-    else side.classList.remove('score-visible');
-  });
-
-  revealBtns.forEach(btn => {
-    btn.textContent = show ? 'Hide score' : 'Show score';
-  });
+.modal-overlay.hidden {
+    display: none !important;
 }
 
-if (leagueSelect) {
-  leagueSelect.addEventListener('change', (e) => {
-    currentLeague = e.target.value;
-    localStorage.setItem('quiet_pitch_league', currentLeague);
-    
-    localStorage.removeItem('quiet_pitch_date');
-    savedDate = null;
-    currentMatchDateIndex = -1;
-
-    const selectedText = e.target.options[e.target.selectedIndex].text;
-    
-    if (currentTab === 'matches') {
-      if (titleEl) titleEl.textContent = selectedText;
-      initCalendar();
-    } else if (currentTab === 'table') {
-      if (titleEl) titleEl.textContent = `${selectedText} Standings`;
-      loadLeagueTable();
-    } else if (currentTab === 'saved') {
-      loadSavedMatches();
-    }
-  });
+.modal-card {
+    background: #202024;
+    border: 1px solid #3a3a42;
+    border-radius: 12px;
+    padding: 22px 24px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    color: #e0e0e0;
+    margin: auto;
 }
 
-dateSelect.addEventListener('change', (e) => {
-  currentMatchDateIndex = parseInt(e.target.value);
-  rememberDate();
-  loadMatchesForCurrentIndex();
-});
+.modal-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.15rem;
+    color: #ffffff;
+}
 
-prevBtn.addEventListener('click', () => {
-  if (currentMatchDateIndex > 0) {
-    currentMatchDateIndex--;
-    rememberDate();
-    loadMatchesForCurrentIndex();
-  }
-});
+.modal-card p {
+    margin: 0 0 18px 0;
+    font-size: 0.9rem;
+    color: #9ca3af;
+    line-height: 1.4;
+}
 
-nextBtn.addEventListener('click', () => {
-  if (currentMatchDateIndex < matchDates.length - 1) {
-    currentMatchDateIndex++;
-    rememberDate();
-    loadMatchesForCurrentIndex();
-  }
-});
+.modal-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    color: #d1d5db;
+    margin-bottom: 22px;
+    cursor: pointer;
+}
 
-todayBtn.addEventListener('click', () => {
-  const todayStr = formatDateForParam(new Date());
-  const todayIndex = matchDates.indexOf(todayStr);
-  
-  if (todayIndex !== -1) {
-    currentMatchDateIndex = todayIndex;
-  } else {
-    currentMatchDateIndex = 0;
-  }
-  
-  rememberDate();
-  loadMatchesForCurrentIndex();
-});
+.modal-checkbox-label input {
+    cursor: pointer;
+    accent-color: #10b981;
+    width: 16px;
+    height: 16px;
+}
 
-initCalendar();
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.modal-btn.cancel {
+    background: #2d2d34;
+    border-color: #3f3f46;
+    color: #e0e0e0;
+}
+
+.modal-btn.cancel:hover {
+    background: #3f3f46;
+}
+
+.modal-btn.continue {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.modal-btn.continue:hover {
+    background: #059669;
+}
+
+/* Footer About Link Style */
+.footer-about-link {
+  background: none;
+  border: none;
+  color: #10b981;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.footer-about-link:hover {
+  opacity: 0.8;
+}
+
+/* About Modal Styling (Matching Dark Theme) */
+dialog.about-dialog {
+  border: 1px solid #3a3a42;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 440px;
+  width: 90%;
+  margin: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  background: #202024;
+  color: #e0e0e0;
+}
+
+dialog.about-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(2px);
+}
+
+.about-dialog .modal-content {
+  padding: 22px 24px;
+  text-align: left;
+}
+
+.about-dialog .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.about-dialog .modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.about-dialog .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0;
+  line-height: 1;
+}
+
+.about-dialog .close-btn:hover {
+  color: #ffffff;
+}
+
+.about-dialog h4 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9ca3af;
+  margin-top: 18px;
+  margin-bottom: 6px;
+}
+
+.about-dialog p {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #9ca3af;
+  margin: 0 0 10px 0;
+}
