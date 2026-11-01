@@ -119,18 +119,35 @@ async function loadLeagueTable() {
 
     standingsEntries.forEach((entry, index) => {
       const stats = entry.stats || [];
-      const getStat = (name) => {
-        const s = stats.find(item => item.name === name || item.type === name);
-        return s ? s.value : '-';
+      const getStat = (names) => {
+        const nameList = Array.isArray(names) ? names : [names];
+        for (const name of nameList) {
+          const s = stats.find(item => item.name === name || item.type === name || item.abbreviation === name);
+          if (s && s.value !== undefined) return s.value;
+        }
+        return null;
       };
 
-      const pos = getStat('rank') || getStat('overallRank') || (index + 1);
-      const played = getStat('gamesPlayed');
-      const wins = getStat('wins');
-      const draws = getStat('ties');
-      const losses = getStat('losses');
-      const gd = getStat('goalDifferential');
-      const pts = getStat('points');
+      const pos = getStat(['rank', 'overallRank']) || (index + 1);
+      const played = getStat(['gamesPlayed', 'gp', 'played']) ?? '-';
+      const wins = getStat(['wins', 'w']) ?? '-';
+      const draws = getStat(['ties', 'draws', 'd']) ?? '-';
+      const losses = getStat(['losses', 'l']) ?? '-';
+      const pts = getStat(['points', 'pts']) ?? '-';
+
+      // Robust GD check: tries explicit keys first, otherwise calculates GF minus GA
+      let gd = getStat(['goalDifferential', 'gd', 'goalDiff']);
+      if (gd === null || gd === undefined || gd === '-') {
+        const gf = getStat(['goalsFor', 'gf']);
+        const ga = getStat(['goalsAgainst', 'ga']);
+        if (gf !== null && ga !== null) {
+          gd = gf - ga;
+        } else {
+          gd = '-';
+        }
+      }
+
+      const formattedGd = (typeof gd === 'number' && gd > 0) ? `+${gd}` : gd;
 
       const teamInfo = entry.team || {};
       const teamName = teamInfo.shortDisplayName || teamInfo.name || teamInfo.displayName || 'Team';
@@ -149,7 +166,7 @@ async function loadLeagueTable() {
           <td>${wins}</td>
           <td>${draws}</td>
           <td>${losses}</td>
-          <td>${gd > 0 ? '+' + gd : gd}</td>
+          <td>${formattedGd}</td>
           <td class="pts-col">${pts}</td>
         </tr>
       `;
