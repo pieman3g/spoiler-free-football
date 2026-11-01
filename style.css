@@ -170,6 +170,15 @@ header {
     border-color: #2a2a2e;
 }
 
+/* Today Jump Button Styling */
+.today-jump-btn {
+    width: auto !important;
+    border-radius: 20px !important;
+    padding: 0 14px;
+    font-size: 0.82rem !important;
+    font-weight: 600;
+}
+
 .date-dropdown {
     flex: 1;
     background: #242427;
@@ -643,6 +652,7 @@ header {
 .modal-btn.continue:hover {
     background: #059669;
 }
+
 /* Footer About Link Style */
 .footer-about-link {
   background: none;
