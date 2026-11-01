@@ -35,6 +35,7 @@
         <nav class="nav-tabs">
             <a class="nav-tab active" id="tab-matches" onclick="switchTab('matches')">Matches</a>
             <a class="nav-tab" id="tab-watchability" onclick="switchTab('watchability')">Watchability</a>
+            <a class="nav-tab" id="tab-table" onclick="switchTab('table')">Table</a>
             <a class="nav-tab" id="tab-saved" onclick="switchTab('saved')">Saved</a>
         </nav>
 
@@ -69,6 +70,11 @@
         <main id="matches-container">
             <!-- Dynamic Match Cards Render Here -->
         </main>
+
+        <!-- Standings Table Container -->
+        <div id="table-container" class="hidden">
+            <!-- Populated dynamically by script.js -->
+        </div>
 
         <!-- Trademark & Unofficial Disclaimer Footer -->
         <footer class="site-footer">
@@ -113,29 +119,3 @@
         </p>
       </div>
     </dialog>
-
-    <script>
-      // Simple script to handle the About Modal
-      const aboutModal = document.getElementById('about-modal');
-      const aboutBtn = document.getElementById('about-btn');
-      const closeAboutBtn = document.getElementById('close-about-modal');
-
-      aboutBtn.addEventListener('click', () => aboutModal.showModal());
-      closeAboutBtn.addEventListener('click', () => aboutModal.close());
-      
-      // Close when clicking outside the modal box
-      aboutModal.addEventListener('click', (e) => {
-        const dialogDimensions = aboutModal.getBoundingClientRect();
-        if (
-          e.clientX < dialogDimensions.left ||
-          e.clientX > dialogDimensions.right ||
-          e.clientY < dialogDimensions.top ||
-          e.clientY > dialogDimensions.bottom
-        ) {
-          aboutModal.close();
-        }
-      });
-    </script>
-    <script src="script.js"></script>
-</body>
-</html>
