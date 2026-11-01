@@ -8,8 +8,6 @@ const nextBtn = document.getElementById('next-date-btn');
 const todayBtn = document.getElementById('today-btn');
 
 let currentLeague = localStorage.getItem('quiet_pitch_league') || 'eng.1';
-// The last date viewed is remembered by its value (YYYYMMDD), not its position in the list,
-// because the list of dates can change from one visit to the next.
 let savedDate = localStorage.getItem('quiet_pitch_date');
 let currentMatchDateIndex = -1;
 let globalSpoilersRevealed = false;
@@ -42,18 +40,26 @@ function switchTab(tabName) {
   currentTab = tabName;
   
   document.getElementById('tab-matches').classList.toggle('active', tabName === 'matches');
-  document.getElementById('tab-saved').classList.toggle('active', tabName === 'saved');
   document.getElementById('tab-watchability').classList.toggle('active', tabName === 'watchability');
+  document.getElementById('tab-table').classList.toggle('active', tabName === 'table');
+  document.getElementById('tab-saved').classList.toggle('active', tabName === 'saved');
 
   const datePickerBar = document.querySelector('.date-picker-bar');
   const competitionBar = document.querySelector('.competition-selector-bar');
   
   if (tabName === 'saved') {
     if (datePickerBar) datePickerBar.style.display = 'none';
-    if (competitionBar) competitionBar.style.display = 'none';
+    if (competitionBar) competitionBar.style.display = 'flex';
     if (titleEl) titleEl.textContent = 'Saved Matches';
     if (subtitleEl) subtitleEl.textContent = 'Your bookmarked matches archive';
     loadSavedMatches();
+  } else if (tabName === 'table') {
+    if (datePickerBar) datePickerBar.style.display = 'none';
+    if (competitionBar) competitionBar.style.display = 'flex';
+    const selectedOpt = leagueSelect.options[leagueSelect.selectedIndex];
+    if (selectedOpt && titleEl) titleEl.textContent = `${selectedOpt.text} Standings`;
+    if (subtitleEl) subtitleEl.textContent = 'Live competition league table';
+    loadLeagueTable();
   } else if (tabName === 'matches') {
     if (datePickerBar) datePickerBar.style.display = 'flex';
     if (competitionBar) competitionBar.style.display = 'flex';
@@ -66,6 +72,99 @@ function switchTab(tabName) {
     if (titleEl) titleEl.textContent = 'Watchability Feed';
     if (subtitleEl) subtitleEl.textContent = 'Coming soon...';
     container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Watchability curation view is under construction.</p>';
+  }
+}
+
+async function loadLeagueTable() {
+  container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Loading league table...</p>';
+
+  try {
+    const res = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${currentLeague}/standings`);
+    if (!res.ok) throw new Error("Failed to fetch standings");
+    const data = await res.json();
+
+    let standingsEntries = [];
+    const children = data.children || data.standings?.entries || [];
+    
+    if (data.standings && Array.isArray(data.standings)) {
+      standingsEntries = data.standings;
+    } else if (children.length > 0 && children[0].standings) {
+      standingsEntries = children[0].standings.entries || children[0].standings;
+    } else if (Array.isArray(children)) {
+      standingsEntries = children;
+    }
+
+    if (!standingsEntries || standingsEntries.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Standings not available for this competition.</p>';
+      return;
+    }
+
+    let tableHtml = `
+      <div class="table-responsive">
+        <table class="standings-table">
+          <thead>
+            <tr>
+              <th class="pos-col">#</th>
+              <th class="team-col">Team</th>
+              <th>P</th>
+              <th>W</th>
+              <th>D</th>
+              <th>L</th>
+              <th>GD</th>
+              <th>Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    standingsEntries.forEach((entry, index) => {
+      const stats = entry.stats || [];
+      const getStat = (name) => {
+        const s = stats.find(item => item.name === name || item.type === name);
+        return s ? s.value : '-';
+      };
+
+      const pos = getStat('rank') || getStat('overallRank') || (index + 1);
+      const played = getStat('gamesPlayed');
+      const wins = getStat('wins');
+      const draws = getStat('ties');
+      const losses = getStat('losses');
+      const gd = getStat('goalDifferential');
+      const pts = getStat('points');
+
+      const teamInfo = entry.team || {};
+      const teamName = teamInfo.shortDisplayName || teamInfo.name || teamInfo.displayName || 'Team';
+      const teamLogo = teamInfo.logo || '';
+
+      tableHtml += `
+        <tr>
+          <td class="pos-col">${pos}</td>
+          <td class="team-col">
+            <div class="table-team-cell">
+              ${teamLogo ? `<img src="${teamLogo}" alt="" class="table-badge">` : ''}
+              <span>${teamName}</span>
+            </div>
+          </td>
+          <td>${played}</td>
+          <td>${wins}</td>
+          <td>${draws}</td>
+          <td>${losses}</td>
+          <td>${gd > 0 ? '+' + gd : gd}</td>
+          <td class="pts-col">${pts}</td>
+        </tr>
+      `;
+    });
+
+    tableHtml += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    container.innerHTML = tableHtml;
+  } catch (err) {
+    console.error("Error loading standings:", err);
+    container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">Unable to load league table for this competition.</p>';
   }
 }
 
@@ -180,9 +279,7 @@ async function loadSavedMatches() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Which days appear in the date dropdown.
-// ---------------------------------------------------------------------------
+// Calendar logic
 const FIXTURE_WINDOW_DAYS_BACK = 45;
 const FIXTURE_WINDOW_DAYS_AHEAD = 60;
 
@@ -245,7 +342,6 @@ async function datesFromFixtures(league) {
   const data = await res.json();
 
   const dates = [...new Set((data.events || []).map(e => toParamDate(e.date)).filter(Boolean))].sort();
-
   if (dates.length < 2 || daysBetween(dates[0], dates[dates.length - 1]) < 14) return [];
 
   try { localStorage.setItem(cacheKey, JSON.stringify({ day: todayKey, dates })); } catch (e) { /* ignore */ }
@@ -281,7 +377,6 @@ async function initCalendar() {
   if (!dates) { dates = fallbackDates(); source = 'every day (fallback)'; }
 
   matchDates = dates;
-  console.info(`[QuietPitch] ${league}: ${dates.length} dates from ${source}`);
   setupInitialDateIndex();
 }
 
@@ -600,7 +695,7 @@ function vote(matchId) {
   
   if (currentTab === 'saved') {
     loadSavedMatches();
-  } else {
+  } else if (currentTab === 'matches') {
     loadMatchesForCurrentIndex();
   }
 }
@@ -689,10 +784,13 @@ if (leagueSelect) {
     currentMatchDateIndex = -1;
 
     const selectedText = e.target.options[e.target.selectedIndex].text;
-    if (titleEl && currentTab === 'matches') titleEl.textContent = selectedText;
     
     if (currentTab === 'matches') {
+      if (titleEl) titleEl.textContent = selectedText;
       initCalendar();
+    } else if (currentTab === 'table') {
+      if (titleEl) titleEl.textContent = `${selectedText} Standings`;
+      loadLeagueTable();
     } else if (currentTab === 'saved') {
       loadSavedMatches();
     }
