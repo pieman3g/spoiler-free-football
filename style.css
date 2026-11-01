@@ -201,7 +201,7 @@ header {
     background-color: #2d2d31;
 }
 
-/* Match Card Layout & Wikihoops Expansion Transition */
+/* Match Card Layout & Expansion Transition */
 .match-card {
     background: #202024;
     border: 1px solid #2f2f35;
@@ -328,7 +328,6 @@ header {
     line-height: 32px;
 }
 
-/* Dynamic truncation triggered only when scores are visible */
 .team-side.score-visible .team-info-block {
     overflow: hidden;
 }
@@ -338,7 +337,6 @@ header {
     text-overflow: ellipsis;
 }
 
-/* Mobile-only away team grid lockdown */
 @media (max-width: 768px) {
     .team-side.away.score-visible {
         display: grid;
@@ -418,7 +416,7 @@ header {
     display: none !important;
 }
 
-/* Wikihoops Hints Drawer Styling (Mobile First / Default) */
+/* Hints Drawer Styling */
 .hints-drawer {
     margin-top: 12px;
     padding-top: 12px;
@@ -472,7 +470,6 @@ header {
     display: none !important;
 }
 
-/* Desktop screen override: smaller hint font size */
 @media (min-width: 769px) {
     .hint-question {
         font-size: 0.85rem;
@@ -548,6 +545,80 @@ header {
     color: #93c5fd;
 }
 
+/* Standings Table Styling */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    background: #202024;
+    border: 1px solid #2f2f35;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.88rem;
+    color: #e0e0e0;
+}
+
+.standings-table th {
+    background: #26262c;
+    color: #9ca3af;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 10px;
+    border-bottom: 1px solid #3a3a42;
+}
+
+.standings-table td {
+    padding: 10px 10px;
+    border-bottom: 1px solid #2a2a30;
+    white-space: nowrap;
+}
+
+.standings-table tbody tr:hover {
+    background: #26262c;
+}
+
+.standings-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.pos-col {
+    width: 40px;
+    text-align: center;
+    color: #9ca3af;
+    font-weight: 600;
+}
+
+.team-col {
+    min-width: 180px;
+}
+
+.table-team-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.table-badge {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.pts-col {
+    font-weight: bold;
+    color: #10b981;
+}
+
 /* Site Footer / Disclaimer Styling */
 .site-footer {
     text-align: center;
@@ -559,7 +630,7 @@ header {
     line-height: 1.4;
 }
 
-/* Modal Overlay & Centering Fix */
+/* Modal Overlay Styling */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -653,7 +724,6 @@ header {
     background: #059669;
 }
 
-/* Footer About Link Style */
 .footer-about-link {
   background: none;
   border: none;
@@ -669,7 +739,6 @@ header {
   opacity: 0.8;
 }
 
-/* About Modal Styling (Matching Dark Theme) */
 dialog.about-dialog {
   border: 1px solid #3a3a42;
   border-radius: 12px;
