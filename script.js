@@ -123,7 +123,10 @@ async function loadLeagueTable() {
         const nameList = Array.isArray(names) ? names : [names];
         for (const name of nameList) {
           const s = stats.find(item => item.name === name || item.type === name || item.abbreviation === name);
-          if (s && s.value !== undefined) return s.value;
+          if (s) {
+            if (s.value !== undefined) return s.value;
+            if (s.displayValue !== undefined) return s.displayValue;
+          }
         }
         return null;
       };
@@ -135,19 +138,20 @@ async function loadLeagueTable() {
       const losses = getStat(['losses', 'l']) ?? '-';
       const pts = getStat(['points', 'pts']) ?? '-';
 
-      // Robust GD check: tries explicit keys first, otherwise calculates GF minus GA
-      let gd = getStat(['goalDifferential', 'gd', 'goalDiff']);
+      // Check standard keys including "differential", otherwise calculate GF minus GA
+      let gd = getStat(['goalDifferential', 'differential', 'gd', 'goalDiff']);
       if (gd === null || gd === undefined || gd === '-') {
-        const gf = getStat(['goalsFor', 'gf']);
-        const ga = getStat(['goalsAgainst', 'ga']);
-        if (gf !== null && ga !== null) {
+        const gf = parseInt(getStat(['goalsFor', 'gf']), 10);
+        const ga = parseInt(getStat(['goalsAgainst', 'ga']), 10);
+        if (!isNaN(gf) && !isNaN(ga)) {
           gd = gf - ga;
         } else {
           gd = '-';
         }
       }
 
-      const formattedGd = (typeof gd === 'number' && gd > 0) ? `+${gd}` : gd;
+      const numGd = parseInt(gd, 10);
+      const formattedGd = (!isNaN(numGd) && numGd > 0) ? `+${numGd}` : gd;
 
       const teamInfo = entry.team || {};
       const teamName = teamInfo.shortDisplayName || teamInfo.name || teamInfo.displayName || 'Team';
