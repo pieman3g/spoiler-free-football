@@ -35,6 +35,7 @@
         <nav class="nav-tabs">
             <a class="nav-tab active" id="tab-matches" onclick="switchTab('matches')">Matches</a>
             <a class="nav-tab" id="tab-watchability" onclick="switchTab('watchability')">Watchability</a>
+            <a class="nav-tab" id="tab-table" onclick="switchTab('table')">Table</a>
             <a class="nav-tab" id="tab-saved" onclick="switchTab('saved')">Saved</a>
         </nav>
 
@@ -66,9 +67,9 @@
             <button id="next-date-btn" class="date-nav-btn" aria-label="Next Day">&gt;</button>
         </div>
 
-        <!-- Matches Container -->
+        <!-- Matches / Content Container -->
         <main id="matches-container">
-            <!-- Dynamic Match Cards Render Here -->
+            <!-- Dynamic Match Cards or League Table Renders Here -->
         </main>
 
         <!-- Trademark & Unofficial Disclaimer Footer -->
@@ -116,7 +117,6 @@
     </dialog>
 
     <script>
-      // Simple script to handle the About Modal
       const aboutModal = document.getElementById('about-modal');
       const aboutBtn = document.getElementById('about-btn');
       const closeAboutBtn = document.getElementById('close-about-modal');
@@ -124,7 +124,6 @@
       aboutBtn.addEventListener('click', () => aboutModal.showModal());
       closeAboutBtn.addEventListener('click', () => aboutModal.close());
       
-      // Close when clicking outside the modal box
       aboutModal.addEventListener('click', (e) => {
         const dialogDimensions = aboutModal.getBoundingClientRect();
         if (
