@@ -124,8 +124,8 @@ async function loadLeagueTable() {
         for (const name of nameList) {
           const s = stats.find(item => item.name === name || item.type === name || item.abbreviation === name);
           if (s) {
-            if (s.value !== undefined) return s.value;
-            if (s.displayValue !== undefined) return s.displayValue;
+            if (s.value !== undefined) return Number(s.value);
+            if (s.displayValue !== undefined && !isNaN(s.displayValue)) return Number(s.displayValue);
           }
         }
         return null;
@@ -138,20 +138,20 @@ async function loadLeagueTable() {
       const losses = getStat(['losses', 'l']) ?? '-';
       const pts = getStat(['points', 'pts']) ?? '-';
 
-      // Check standard keys including "differential", otherwise calculate GF minus GA
-      let gd = getStat(['goalDifferential', 'differential', 'gd', 'goalDiff']);
-      if (gd === null || gd === undefined || gd === '-') {
-        const gf = parseInt(getStat(['goalsFor', 'gf']), 10);
-        const ga = parseInt(getStat(['goalsAgainst', 'ga']), 10);
-        if (!isNaN(gf) && !isNaN(ga)) {
-          gd = gf - ga;
-        } else {
-          gd = '-';
+      // Explicitly compute GD from Goals For minus Goals Against
+      const gf = getStat(['goalsFor', 'gf', 'pointsFor']);
+      const ga = getStat(['goalsAgainst', 'ga', 'pointsAgainst']);
+      
+      let gd = '-';
+      if (gf !== null && ga !== null) {
+        const diff = gf - ga;
+        gd = diff > 0 ? `+${diff}` : diff;
+      } else {
+        const rawGd = getStat(['goalDifferential', 'differential', 'gd', 'goalDiff']);
+        if (rawGd !== null) {
+          gd = rawGd > 0 ? `+${rawGd}` : rawGd;
         }
       }
-
-      const numGd = parseInt(gd, 10);
-      const formattedGd = (!isNaN(numGd) && numGd > 0) ? `+${numGd}` : gd;
 
       const teamInfo = entry.team || {};
       const teamName = teamInfo.shortDisplayName || teamInfo.name || teamInfo.displayName || 'Team';
@@ -170,7 +170,7 @@ async function loadLeagueTable() {
           <td>${wins}</td>
           <td>${draws}</td>
           <td>${losses}</td>
-          <td>${formattedGd}</td>
+          <td>${gd}</td>
           <td class="pts-col">${pts}</td>
         </tr>
       `;
