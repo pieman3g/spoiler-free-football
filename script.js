@@ -845,5 +845,5 @@ if (nextBtn) {
   });
 }
 
-// Start app data fetch on load
+// Kick off initialization safely
 initCalendar();
