@@ -727,3 +727,122 @@ dialog.about-dialog::backdrop {
   color: #9ca3af;
   margin: 0 0 10px 0;
 }
+/* Helper utility for table visibility */
+#table-container.hidden {
+    display: none !important;
+}
+
+/* Standings Header & Subtitle */
+.table-header-block {
+    margin-bottom: 16px;
+}
+
+.table-header-block h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.table-header-block p {
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+/* Spoiler Warning Box */
+.table-spoiler-card {
+    background: #202024;
+    border: 1px solid #2f2f35;
+    border-radius: 12px;
+    padding: 36px 20px;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.table-spoiler-card h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 6px;
+}
+
+.table-spoiler-card p {
+    font-size: 0.88rem;
+    color: #9ca3af;
+    margin-bottom: 18px;
+}
+
+.reveal-table-btn {
+    background: #10b981;
+    color: #000000;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.reveal-table-btn:hover {
+    background: #059669;
+    color: #ffffff;
+}
+
+/* Standings Table Styling */
+.table-wrapper {
+    background: #202024;
+    border: 1px solid #2f2f35;
+    border-radius: 10px;
+    overflow-x: auto;
+}
+
+.standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    text-align: center;
+}
+
+.standings-table th, 
+.standings-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a2a30;
+}
+
+.standings-table th {
+    color: #9ca3af;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    background: #1a1a1e;
+}
+
+.standings-table tr:last-child td {
+    border-bottom: none;
+}
+
+.standings-table td.align-left, 
+.standings-table th.align-left {
+    text-align: left;
+}
+
+.table-team-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.table-badge {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.pts-col {
+    font-weight: 700;
+    color: #ffffff;
+}
