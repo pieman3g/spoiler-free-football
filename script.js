@@ -841,14 +841,17 @@ nextBtn.addEventListener('click', () => {
 
 todayBtn.addEventListener('click', () => {
   const todayStr = formatDateForParam(new Date());
-  const todayIndex = matchDates.indexOf(todayStr);
+  let todayIndex = matchDates.indexOf(todayStr);
   
-  if (todayIndex !== -1) {
-    currentMatchDateIndex = todayIndex;
-  } else {
-    currentMatchDateIndex = 0;
+  if (todayIndex === -1) {
+    todayIndex = matchDates.findIndex(d => d >= todayStr);
   }
   
+  if (todayIndex === -1) {
+    todayIndex = matchDates.length - 1;
+  }
+  
+  currentMatchDateIndex = todayIndex;
   rememberDate();
   loadMatchesForCurrentIndex();
 });
