@@ -422,7 +422,6 @@ function setupInitialDateIndex() {
     currentMatchDateIndex = 0;
   }
 
-  // Ensure type safety
   currentMatchDateIndex = parseInt(currentMatchDateIndex, 10);
   populateDropdown();
   if (currentTab === 'matches') {
@@ -453,10 +452,14 @@ function populateDropdown() {
 
 function updateNavButtons() {
   currentMatchDateIndex = parseInt(currentMatchDateIndex, 10);
-  prevBtn.disabled = currentMatchDateIndex <= 0;
-  nextBtn.disabled = currentMatchDateIndex >= matchDates.length - 1;
-  prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
-  nextBtn.style.opacity = nextBtn.disabled ? "0.4" : "1";
+  if (prevBtn) {
+    prevBtn.disabled = currentMatchDateIndex <= 0;
+    prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
+  }
+  if (nextBtn) {
+    nextBtn.disabled = currentMatchDateIndex >= matchDates.length - 1;
+    nextBtn.style.opacity = nextBtn.disabled ? "0.4" : "1";
+  }
 }
 
 async function loadMatchesForCurrentIndex() {
@@ -853,49 +856,57 @@ if (leagueSelect) {
   });
 }
 
-dateSelect.addEventListener('change', (e) => {
-  stopLivePolling();
-  currentMatchDateIndex = parseInt(e.target.value, 10);
-  rememberDate();
-  loadMatchesForCurrentIndex();
-});
-
-prevBtn.addEventListener('click', () => {
-  stopLivePolling();
-  let index = parseInt(currentMatchDateIndex, 10);
-  if (index > 0) {
-    currentMatchDateIndex = index - 1;
+if (dateSelect) {
+  dateSelect.addEventListener('change', (e) => {
+    stopLivePolling();
+    currentMatchDateIndex = parseInt(e.target.value, 10);
     rememberDate();
     loadMatchesForCurrentIndex();
-  }
-});
+  });
+}
 
-nextBtn.addEventListener('click', () => {
-  stopLivePolling();
-  let index = parseInt(currentMatchDateIndex, 10);
-  if (index < matchDates.length - 1) {
-    currentMatchDateIndex = index + 1;
+if (prevBtn) {
+  prevBtn.addEventListener('click', () => {
+    stopLivePolling();
+    let index = parseInt(currentMatchDateIndex, 10);
+    if (index > 0) {
+      currentMatchDateIndex = index - 1;
+      rememberDate();
+      loadMatchesForCurrentIndex();
+    }
+  });
+}
+
+if (nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    stopLivePolling();
+    let index = parseInt(currentMatchDateIndex, 10);
+    if (index < matchDates.length - 1) {
+      currentMatchDateIndex = index + 1;
+      rememberDate();
+      loadMatchesForCurrentIndex();
+    }
+  });
+}
+
+if (todayBtn) {
+  todayBtn.addEventListener('click', () => {
+    stopLivePolling();
+    const todayStr = formatDateForParam(new Date());
+    let todayIndex = matchDates.indexOf(todayStr);
+    
+    if (todayIndex === -1) {
+      todayIndex = matchDates.findIndex(d => d >= todayStr);
+    }
+    
+    if (todayIndex === -1) {
+      todayIndex = matchDates.length - 1;
+    }
+    
+    currentMatchDateIndex = parseInt(todayIndex, 10);
     rememberDate();
     loadMatchesForCurrentIndex();
-  }
-});
-
-todayBtn.addEventListener('click', () => {
-  stopLivePolling();
-  const todayStr = formatDateForParam(new Date());
-  let todayIndex = matchDates.indexOf(todayStr);
-  
-  if (todayIndex === -1) {
-    todayIndex = matchDates.findIndex(d => d >= todayStr);
-  }
-  
-  if (todayIndex === -1) {
-    todayIndex = matchDates.length - 1;
-  }
-  
-  currentMatchDateIndex = parseInt(todayIndex, 10);
-  rememberDate();
-  loadMatchesForCurrentIndex();
-});
+  });
+}
 
 initCalendar();
