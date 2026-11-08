@@ -308,8 +308,9 @@ async function loadSavedMatches() {
   }
 }
 
-const FIXTURE_WINDOW_DAYS_BACK = 90;
-const FIXTURE_WINDOW_DAYS_AHEAD = 120;
+// Calendar logic
+const FIXTURE_WINDOW_DAYS_BACK = 45;
+const FIXTURE_WINDOW_DAYS_AHEAD = 60;
 
 function scoreboardUrl(league) {
   return `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard`;
@@ -335,6 +336,19 @@ function fallbackDates() {
   return dates;
 }
 
+function datesFromCalendar(data) {
+  const entries = data && data.leagues && data.leagues[0] && data.leagues[0].calendar;
+  if (!Array.isArray(entries) || entries.length === 0) return null;
+  if (!entries.every(e => typeof e === 'string')) return null;
+
+  const dates = [...new Set(entries.map(toParamDate).filter(Boolean))].sort();
+  if (dates.length < 5) return null;
+
+  const spanDays = daysBetween(dates[0], dates[dates.length - 1]) + 1;
+  if (dates.length / spanDays > 0.7) return null;
+  return dates;
+}
+
 async function datesFromFixtures(league) {
   const today = new Date();
   const todayKey = formatDateForParam(today);
@@ -357,48 +371,39 @@ async function datesFromFixtures(league) {
   const data = await res.json();
 
   const dates = [...new Set((data.events || []).map(e => toParamDate(e.date)).filter(Boolean))].sort();
-  if (dates.length > 0) {
-    try { localStorage.setItem(cacheKey, JSON.stringify({ day: todayKey, dates })); } catch (e) { /* ignore */ }
-    return dates;
-  }
-  return [];
+  if (dates.length < 2 || daysBetween(dates[0], dates[dates.length - 1]) < 14) return [];
+
+  try { localStorage.setItem(cacheKey, JSON.stringify({ day: todayKey, dates })); } catch (e) { /* ignore */ }
+  return dates;
 }
 
 async function initCalendar() {
   const league = currentLeague;
   let dates = null;
-  const isTournament = league.startsWith('uefa.') || league.includes('cup');
+  let source = '';
 
-  if (!isTournament) {
-    try {
-      const res = await fetch(scoreboardUrl(league));
-      const data = await res.json();
-      if (league !== currentLeague) return;
-      const calendarEntries = data && data.leagues && data.leagues[0] && data.leagues[0].calendar;
-      if (Array.isArray(calendarEntries) && calendarEntries.length > 0 && calendarEntries.every(e => typeof e === 'string')) {
-        const parsed = [...new Set(calendarEntries.map(toParamDate).filter(Boolean))].sort();
-        const spanDays = daysBetween(parsed[0], parsed[parsed.length - 1]) + 1;
-        if (parsed.length / spanDays <= 0.7) {
-          dates = parsed;
-        }
-      }
-    } catch (err) {
-      console.error('Error reading calendar:', err);
-    }
+  try {
+    const res = await fetch(scoreboardUrl(league));
+    const data = await res.json();
+    if (league !== currentLeague) return;
+    dates = datesFromCalendar(data);
+    if (dates) source = 'ESPN calendar';
+  } catch (err) {
+    console.error('Error reading calendar:', err);
   }
 
   if (!dates) {
     try {
       const found = await datesFromFixtures(league);
       if (league !== currentLeague) return;
-      if (found.length) { dates = found; }
+      if (found.length) { dates = found; source = 'fixtures'; }
     } catch (err) {
       console.error('Error reading fixtures:', err);
     }
   }
 
   if (league !== currentLeague) return;
-  if (!dates) { dates = fallbackDates(); }
+  if (!dates) { dates = fallbackDates(); source = 'every day (fallback)'; }
 
   matchDates = dates;
   setupInitialDateIndex();
@@ -452,14 +457,10 @@ function populateDropdown() {
 
 function updateNavButtons() {
   currentMatchDateIndex = parseInt(currentMatchDateIndex, 10);
-  if (prevBtn) {
-    prevBtn.disabled = currentMatchDateIndex <= 0;
-    prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
-  }
-  if (nextBtn) {
-    nextBtn.disabled = currentMatchDateIndex >= matchDates.length - 1;
-    nextBtn.style.opacity = nextBtn.disabled ? "0.4" : "1";
-  }
+  prevBtn.disabled = currentMatchDateIndex <= 0;
+  nextBtn.disabled = currentMatchDateIndex >= matchDates.length - 1;
+  prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
+  nextBtn.style.opacity = nextBtn.disabled ? "0.4" : "1";
 }
 
 async function loadMatchesForCurrentIndex() {
@@ -483,16 +484,6 @@ async function loadMatchesForCurrentIndex() {
     const formattedHeaderDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     
     if (!events || events.length === 0) {
-      const todayStr = formatDateForParam(new Date());
-      const nextAvailableIndex = matchDates.findIndex((d, idx) => idx > currentMatchDateIndex && d >= todayStr);
-      
-      if (nextAvailableIndex !== -1 && nextAvailableIndex !== currentMatchDateIndex) {
-        currentMatchDateIndex = nextAvailableIndex;
-        rememberDate();
-        loadMatchesForCurrentIndex();
-        return;
-      }
-
       container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No matches scheduled for this date.</p>';
       if (subtitleEl) subtitleEl.textContent = `0 matches on ${formattedHeaderDate}`;
       stopLivePolling();
@@ -600,6 +591,7 @@ async function loadMatchesForCurrentIndex() {
     
     renderMatches(matches);
 
+    // --- LIVE AUTO-REFRESH POLLING ---
     const hasLiveMatches = matches.some(m => m.isLive);
     if (hasLiveMatches) {
       if (!livePollInterval && currentTab === 'matches') {
@@ -614,6 +606,7 @@ async function loadMatchesForCurrentIndex() {
     } else {
       stopLivePolling();
     }
+    // ---------------------------------
 
   } catch (error) {
     console.error("Error loading live matches:", error);
@@ -856,57 +849,49 @@ if (leagueSelect) {
   });
 }
 
-if (dateSelect) {
-  dateSelect.addEventListener('change', (e) => {
-    stopLivePolling();
-    currentMatchDateIndex = parseInt(e.target.value, 10);
+dateSelect.addEventListener('change', (e) => {
+  stopLivePolling();
+  currentMatchDateIndex = parseInt(e.target.value, 10);
+  rememberDate();
+  loadMatchesForCurrentIndex();
+});
+
+prevBtn.addEventListener('click', () => {
+  stopLivePolling();
+  let index = parseInt(currentMatchDateIndex, 10);
+  if (index > 0) {
+    currentMatchDateIndex = index - 1;
     rememberDate();
     loadMatchesForCurrentIndex();
-  });
-}
+  }
+});
 
-if (prevBtn) {
-  prevBtn.addEventListener('click', () => {
-    stopLivePolling();
-    let index = parseInt(currentMatchDateIndex, 10);
-    if (index > 0) {
-      currentMatchDateIndex = index - 1;
-      rememberDate();
-      loadMatchesForCurrentIndex();
-    }
-  });
-}
-
-if (nextBtn) {
-  nextBtn.addEventListener('click', () => {
-    stopLivePolling();
-    let index = parseInt(currentMatchDateIndex, 10);
-    if (index < matchDates.length - 1) {
-      currentMatchDateIndex = index + 1;
-      rememberDate();
-      loadMatchesForCurrentIndex();
-    }
-  });
-}
-
-if (todayBtn) {
-  todayBtn.addEventListener('click', () => {
-    stopLivePolling();
-    const todayStr = formatDateForParam(new Date());
-    let todayIndex = matchDates.indexOf(todayStr);
-    
-    if (todayIndex === -1) {
-      todayIndex = matchDates.findIndex(d => d >= todayStr);
-    }
-    
-    if (todayIndex === -1) {
-      todayIndex = matchDates.length - 1;
-    }
-    
-    currentMatchDateIndex = parseInt(todayIndex, 10);
+nextBtn.addEventListener('click', () => {
+  stopLivePolling();
+  let index = parseInt(currentMatchDateIndex, 10);
+  if (index < matchDates.length - 1) {
+    currentMatchDateIndex = index + 1;
     rememberDate();
     loadMatchesForCurrentIndex();
-  });
-}
+  }
+});
+
+todayBtn.addEventListener('click', () => {
+  stopLivePolling();
+  const todayStr = formatDateForParam(new Date());
+  let todayIndex = matchDates.indexOf(todayStr);
+  
+  if (todayIndex === -1) {
+    todayIndex = matchDates.findIndex(d => d >= todayStr);
+  }
+  
+  if (todayIndex === -1) {
+    todayIndex = matchDates.length - 1;
+  }
+  
+  currentMatchDateIndex = parseInt(todayIndex, 10);
+  rememberDate();
+  loadMatchesForCurrentIndex();
+});
 
 initCalendar();
