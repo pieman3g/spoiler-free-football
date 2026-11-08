@@ -13,7 +13,7 @@ let currentMatchDateIndex = -1;
 let globalSpoilersRevealed = false;
 let matchDates = [];
 let currentTab = 'matches';
-let livePollInterval = null; // Tracks background auto-refresh timer for live games
+let livePollInterval = null;
 
 if (leagueSelect) {
   leagueSelect.value = currentLeague;
@@ -31,13 +31,12 @@ function formatDateForParam(date) {
 }
 
 function parseParamDate(dateStr) {
-  const y = parseInt(dateStr.substring(0, 4));
-  const m = parseInt(dateStr.substring(4, 6)) - 1;
-  const d = parseInt(dateStr.substring(6, 8));
+  const y = parseInt(dateStr.substring(0, 4), 10);
+  const m = parseInt(dateStr.substring(4, 6), 10) - 1;
+  const d = parseInt(dateStr.substring(6, 8), 10);
   return new Date(y, m, d);
 }
 
-// Clear live polling interval when leaving the matches tab or changing context
 function stopLivePolling() {
   if (livePollInterval) {
     clearInterval(livePollInterval);
@@ -309,7 +308,6 @@ async function loadSavedMatches() {
   }
 }
 
-// Calendar logic
 const FIXTURE_WINDOW_DAYS_BACK = 90;
 const FIXTURE_WINDOW_DAYS_AHEAD = 120;
 
@@ -424,6 +422,8 @@ function setupInitialDateIndex() {
     currentMatchDateIndex = 0;
   }
 
+  // Ensure type safety
+  currentMatchDateIndex = parseInt(currentMatchDateIndex, 10);
   populateDropdown();
   if (currentTab === 'matches') {
     loadMatchesForCurrentIndex();
@@ -452,6 +452,7 @@ function populateDropdown() {
 }
 
 function updateNavButtons() {
+  currentMatchDateIndex = parseInt(currentMatchDateIndex, 10);
   prevBtn.disabled = currentMatchDateIndex <= 0;
   nextBtn.disabled = currentMatchDateIndex >= matchDates.length - 1;
   prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
@@ -459,6 +460,7 @@ function updateNavButtons() {
 }
 
 async function loadMatchesForCurrentIndex() {
+  currentMatchDateIndex = parseInt(currentMatchDateIndex, 10);
   if (currentTab !== 'matches') return;
   if (currentMatchDateIndex < 0 || currentMatchDateIndex >= matchDates.length) return;
   
@@ -595,7 +597,6 @@ async function loadMatchesForCurrentIndex() {
     
     renderMatches(matches);
 
-    // --- AUTO-REFRESH LIVE POLLING LOGIC ---
     const hasLiveMatches = matches.some(m => m.isLive);
     if (hasLiveMatches) {
       if (!livePollInterval && currentTab === 'matches') {
@@ -610,7 +611,6 @@ async function loadMatchesForCurrentIndex() {
     } else {
       stopLivePolling();
     }
-    // ---------------------------------------
 
   } catch (error) {
     console.error("Error loading live matches:", error);
@@ -855,15 +855,16 @@ if (leagueSelect) {
 
 dateSelect.addEventListener('change', (e) => {
   stopLivePolling();
-  currentMatchDateIndex = parseInt(e.target.value);
+  currentMatchDateIndex = parseInt(e.target.value, 10);
   rememberDate();
   loadMatchesForCurrentIndex();
 });
 
 prevBtn.addEventListener('click', () => {
   stopLivePolling();
-  if (currentMatchDateIndex > 0) {
-    currentMatchDateIndex--;
+  let index = parseInt(currentMatchDateIndex, 10);
+  if (index > 0) {
+    currentMatchDateIndex = index - 1;
     rememberDate();
     loadMatchesForCurrentIndex();
   }
@@ -871,8 +872,9 @@ prevBtn.addEventListener('click', () => {
 
 nextBtn.addEventListener('click', () => {
   stopLivePolling();
-  if (currentMatchDateIndex < matchDates.length - 1) {
-    currentMatchDateIndex++;
+  let index = parseInt(currentMatchDateIndex, 10);
+  if (index < matchDates.length - 1) {
+    currentMatchDateIndex = index + 1;
     rememberDate();
     loadMatchesForCurrentIndex();
   }
@@ -891,7 +893,7 @@ todayBtn.addEventListener('click', () => {
     todayIndex = matchDates.length - 1;
   }
   
-  currentMatchDateIndex = todayIndex;
+  currentMatchDateIndex = parseInt(todayIndex, 10);
   rememberDate();
   loadMatchesForCurrentIndex();
 });
