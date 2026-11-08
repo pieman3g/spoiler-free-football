@@ -13,7 +13,7 @@ let currentMatchDateIndex = -1;
 let globalSpoilersRevealed = false;
 let matchDates = [];
 let currentTab = 'matches';
-let livePollInterval = null; // Tracks background auto-refresh timer
+let livePollInterval = null; // Tracks background auto-refresh timer for live games
 
 if (leagueSelect) {
   leagueSelect.value = currentLeague;
@@ -589,7 +589,7 @@ async function loadMatchesForCurrentIndex() {
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
         isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
         bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
-        highlightUrl: isFinished && statusState === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
+        highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
       };
     });
     
@@ -599,7 +599,6 @@ async function loadMatchesForCurrentIndex() {
     const hasLiveMatches = matches.some(m => m.isLive);
     if (hasLiveMatches) {
       if (!livePollInterval && currentTab === 'matches') {
-        // Poll every 30 seconds if games are live
         livePollInterval = setInterval(() => {
           if (currentTab === 'matches') {
             loadMatchesForCurrentIndex();
@@ -767,7 +766,7 @@ function handleGlobalSpoilerClick() {
     if (dontAsk) {
       revealAllScores();
     } else {
-      document.getElementById('spoiler-modal').classList.add('hidden');
+      document.getElementById('spoiler-modal').classList.remove('hidden');
     }
   }
 }
