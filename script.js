@@ -13,6 +13,7 @@ let currentMatchDateIndex = -1;
 let globalSpoilersRevealed = false;
 let matchDates = [];
 let currentTab = 'matches';
+let livePollInterval = null; // Tracks background auto-refresh timer
 
 if (leagueSelect) {
   leagueSelect.value = currentLeague;
@@ -36,7 +37,16 @@ function parseParamDate(dateStr) {
   return new Date(y, m, d);
 }
 
+// Clear live polling interval when leaving the matches tab or changing context
+function stopLivePolling() {
+  if (livePollInterval) {
+    clearInterval(livePollInterval);
+    livePollInterval = null;
+  }
+}
+
 function switchTab(tabName) {
+  stopLivePolling();
   currentTab = tabName;
   
   document.getElementById('tab-matches').classList.toggle('active', tabName === 'matches');
@@ -300,8 +310,8 @@ async function loadSavedMatches() {
 }
 
 // Calendar logic
-const FIXTURE_WINDOW_DAYS_BACK = 45;
-const FIXTURE_WINDOW_DAYS_AHEAD = 60;
+const FIXTURE_WINDOW_DAYS_BACK = 90;
+const FIXTURE_WINDOW_DAYS_AHEAD = 120;
 
 function scoreboardUrl(league) {
   return `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard`;
@@ -327,19 +337,6 @@ function fallbackDates() {
   return dates;
 }
 
-function datesFromCalendar(data) {
-  const entries = data && data.leagues && data.leagues[0] && data.leagues[0].calendar;
-  if (!Array.isArray(entries) || entries.length === 0) return null;
-  if (!entries.every(e => typeof e === 'string')) return null;
-
-  const dates = [...new Set(entries.map(toParamDate).filter(Boolean))].sort();
-  if (dates.length < 5) return null;
-
-  const spanDays = daysBetween(dates[0], dates[dates.length - 1]) + 1;
-  if (dates.length / spanDays > 0.7) return null;
-  return dates;
-}
-
 async function datesFromFixtures(league) {
   const today = new Date();
   const todayKey = formatDateForParam(today);
@@ -362,39 +359,48 @@ async function datesFromFixtures(league) {
   const data = await res.json();
 
   const dates = [...new Set((data.events || []).map(e => toParamDate(e.date)).filter(Boolean))].sort();
-  if (dates.length < 2 || daysBetween(dates[0], dates[dates.length - 1]) < 14) return [];
-
-  try { localStorage.setItem(cacheKey, JSON.stringify({ day: todayKey, dates })); } catch (e) { /* ignore */ }
-  return dates;
+  if (dates.length > 0) {
+    try { localStorage.setItem(cacheKey, JSON.stringify({ day: todayKey, dates })); } catch (e) { /* ignore */ }
+    return dates;
+  }
+  return [];
 }
 
 async function initCalendar() {
   const league = currentLeague;
   let dates = null;
-  let source = '';
+  const isTournament = league.startsWith('uefa.') || league.includes('cup');
 
-  try {
-    const res = await fetch(scoreboardUrl(league));
-    const data = await res.json();
-    if (league !== currentLeague) return;
-    dates = datesFromCalendar(data);
-    if (dates) source = 'ESPN calendar';
-  } catch (err) {
-    console.error('Error reading calendar:', err);
+  if (!isTournament) {
+    try {
+      const res = await fetch(scoreboardUrl(league));
+      const data = await res.json();
+      if (league !== currentLeague) return;
+      const calendarEntries = data && data.leagues && data.leagues[0] && data.leagues[0].calendar;
+      if (Array.isArray(calendarEntries) && calendarEntries.length > 0 && calendarEntries.every(e => typeof e === 'string')) {
+        const parsed = [...new Set(calendarEntries.map(toParamDate).filter(Boolean))].sort();
+        const spanDays = daysBetween(parsed[0], parsed[parsed.length - 1]) + 1;
+        if (parsed.length / spanDays <= 0.7) {
+          dates = parsed;
+        }
+      }
+    } catch (err) {
+      console.error('Error reading calendar:', err);
+    }
   }
 
   if (!dates) {
     try {
       const found = await datesFromFixtures(league);
       if (league !== currentLeague) return;
-      if (found.length) { dates = found; source = 'fixtures'; }
+      if (found.length) { dates = found; }
     } catch (err) {
       console.error('Error reading fixtures:', err);
     }
   }
 
   if (league !== currentLeague) return;
-  if (!dates) { dates = fallbackDates(); source = 'every day (fallback)'; }
+  if (!dates) { dates = fallbackDates(); }
 
   matchDates = dates;
   setupInitialDateIndex();
@@ -472,8 +478,19 @@ async function loadMatchesForCurrentIndex() {
     const formattedHeaderDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     
     if (!events || events.length === 0) {
+      const todayStr = formatDateForParam(new Date());
+      const nextAvailableIndex = matchDates.findIndex((d, idx) => idx > currentMatchDateIndex && d >= todayStr);
+      
+      if (nextAvailableIndex !== -1 && nextAvailableIndex !== currentMatchDateIndex) {
+        currentMatchDateIndex = nextAvailableIndex;
+        rememberDate();
+        loadMatchesForCurrentIndex();
+        return;
+      }
+
       container.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 40px;">No matches scheduled for this date.</p>';
       if (subtitleEl) subtitleEl.textContent = `0 matches on ${formattedHeaderDate}`;
+      stopLivePolling();
       return;
     }
 
@@ -572,11 +589,30 @@ async function loadMatchesForCurrentIndex() {
         howManyGoalsText: isFinished ? (totalGoals > 0 ? `${totalGoals} total goal${totalGoals === 1 ? '' : 's'} scored.` : '0 goals.') : 'N/A',
         isDrawText: isFinished ? (isDraw ? 'Yes, the match ended in a draw.' : 'No, there was a decisive winner.') : 'Match not started yet.',
         bttsText: isFinished ? (btts ? 'Yes, both teams scored.' : 'No (at least one team kept a clean sheet).') : 'Match not started yet.',
-        highlightUrl: isFinished && state === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
+        highlightUrl: isFinished && statusState === "post" ? `https://www.youtube.com/results?search_query=${encodeURIComponent(matchName + ' highlights')}` : '',
       };
     });
     
     renderMatches(matches);
+
+    // --- AUTO-REFRESH LIVE POLLING LOGIC ---
+    const hasLiveMatches = matches.some(m => m.isLive);
+    if (hasLiveMatches) {
+      if (!livePollInterval && currentTab === 'matches') {
+        // Poll every 30 seconds if games are live
+        livePollInterval = setInterval(() => {
+          if (currentTab === 'matches') {
+            loadMatchesForCurrentIndex();
+          } else {
+            stopLivePolling();
+          }
+        }, 30000);
+      }
+    } else {
+      stopLivePolling();
+    }
+    // ---------------------------------------
+
   } catch (error) {
     console.error("Error loading live matches:", error);
     loadFallbackMatches();
@@ -731,7 +767,7 @@ function handleGlobalSpoilerClick() {
     if (dontAsk) {
       revealAllScores();
     } else {
-      document.getElementById('spoiler-modal').classList.remove('hidden');
+      document.getElementById('spoiler-modal').classList.add('hidden');
     }
   }
 }
@@ -796,6 +832,7 @@ function updateAllScoresVisibility(show) {
 
 if (leagueSelect) {
   leagueSelect.addEventListener('change', (e) => {
+    stopLivePolling();
     currentLeague = e.target.value;
     localStorage.setItem('quiet_pitch_league', currentLeague);
     
@@ -818,12 +855,14 @@ if (leagueSelect) {
 }
 
 dateSelect.addEventListener('change', (e) => {
+  stopLivePolling();
   currentMatchDateIndex = parseInt(e.target.value);
   rememberDate();
   loadMatchesForCurrentIndex();
 });
 
 prevBtn.addEventListener('click', () => {
+  stopLivePolling();
   if (currentMatchDateIndex > 0) {
     currentMatchDateIndex--;
     rememberDate();
@@ -832,6 +871,7 @@ prevBtn.addEventListener('click', () => {
 });
 
 nextBtn.addEventListener('click', () => {
+  stopLivePolling();
   if (currentMatchDateIndex < matchDates.length - 1) {
     currentMatchDateIndex++;
     rememberDate();
@@ -840,6 +880,7 @@ nextBtn.addEventListener('click', () => {
 });
 
 todayBtn.addEventListener('click', () => {
+  stopLivePolling();
   const todayStr = formatDateForParam(new Date());
   let todayIndex = matchDates.indexOf(todayStr);
   
