@@ -14,7 +14,7 @@
     "teams": "Nottingham Forest at AFC Bournemouth",
     "date": "2026-11-21",
     "score": "2 - 0",
-    "status": "LIVE HT",
+    "status": "FT",
     "highlightUrl": "https://www.youtube.com/results?search_query=Nottingham%20Forest%20at%20AFC%20Bournemouth%20highlights",
     "upvotes": 0,
     "downvotes": 0
@@ -24,7 +24,7 @@
     "teams": "Sunderland at Aston Villa",
     "date": "2026-11-21",
     "score": "0 - 0",
-    "status": "LIVE HT",
+    "status": "FT",
     "highlightUrl": "https://www.youtube.com/results?search_query=Sunderland%20at%20Aston%20Villa%20highlights",
     "upvotes": 0,
     "downvotes": 0
@@ -33,8 +33,8 @@
     "id": "401879236",
     "teams": "Leeds United at Chelsea",
     "date": "2026-11-21",
-    "score": "1 - 1",
-    "status": "LIVE HT",
+    "score": "1 - 4",
+    "status": "FT",
     "highlightUrl": "https://www.youtube.com/results?search_query=Leeds%20United%20at%20Chelsea%20highlights",
     "upvotes": 0,
     "downvotes": 0
@@ -43,8 +43,8 @@
     "id": "401879235",
     "teams": "Crystal Palace at Coventry City",
     "date": "2026-11-21",
-    "score": "2 - 2",
-    "status": "LIVE HT",
+    "score": "3 - 2",
+    "status": "FT",
     "highlightUrl": "https://www.youtube.com/results?search_query=Crystal%20Palace%20at%20Coventry%20City%20highlights",
     "upvotes": 0,
     "downvotes": 0
@@ -53,8 +53,8 @@
     "id": "401878754",
     "teams": "Ipswich Town at Tottenham Hotspur",
     "date": "2026-11-21",
-    "score": "1 - 0",
-    "status": "LIVE HT",
+    "score": "2 - 0",
+    "status": "FT",
     "highlightUrl": "https://www.youtube.com/results?search_query=Ipswich%20Town%20at%20Tottenham%20Hotspur%20highlights",
     "upvotes": 0,
     "downvotes": 0
@@ -63,8 +63,8 @@
     "id": "401879232",
     "teams": "Arsenal at Newcastle United",
     "date": "2026-11-21",
-    "score": "vs",
-    "status": "Sat, November 21st at 12:30 PM EST",
+    "score": "2 - 2",
+    "status": "FT",
     "highlightUrl": "https://www.youtube.com/results?search_query=Arsenal%20at%20Newcastle%20United%20highlights",
     "upvotes": 0,
     "downvotes": 0
