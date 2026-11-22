@@ -1,71 +1,21 @@
 [
   {
-    "id": "401879233",
-    "teams": "Fulham at Manchester City",
-    "date": "2026-11-21",
-    "score": "1 - 1",
-    "status": "FT",
-    "highlightUrl": "https://www.youtube.com/results?search_query=Fulham%20at%20Manchester%20City%20highlights",
+    "id": "401879234",
+    "teams": "Brighton & Hove Albion at Hull City",
+    "date": "2026-11-22",
+    "score": "vs",
+    "status": "Sun, November 22nd at 9:00 AM EST",
+    "highlightUrl": "https://www.youtube.com/results?search_query=Brighton%20%26%20Hove%20Albion%20at%20Hull%20City%20highlights",
     "upvotes": 0,
     "downvotes": 0
   },
   {
-    "id": "401879238",
-    "teams": "Nottingham Forest at AFC Bournemouth",
-    "date": "2026-11-21",
-    "score": "2 - 0",
-    "status": "FT",
-    "highlightUrl": "https://www.youtube.com/results?search_query=Nottingham%20Forest%20at%20AFC%20Bournemouth%20highlights",
-    "upvotes": 0,
-    "downvotes": 0
-  },
-  {
-    "id": "401878756",
-    "teams": "Sunderland at Aston Villa",
-    "date": "2026-11-21",
-    "score": "0 - 0",
-    "status": "FT",
-    "highlightUrl": "https://www.youtube.com/results?search_query=Sunderland%20at%20Aston%20Villa%20highlights",
-    "upvotes": 0,
-    "downvotes": 0
-  },
-  {
-    "id": "401879236",
-    "teams": "Leeds United at Chelsea",
-    "date": "2026-11-21",
-    "score": "1 - 4",
-    "status": "FT",
-    "highlightUrl": "https://www.youtube.com/results?search_query=Leeds%20United%20at%20Chelsea%20highlights",
-    "upvotes": 0,
-    "downvotes": 0
-  },
-  {
-    "id": "401879235",
-    "teams": "Crystal Palace at Coventry City",
-    "date": "2026-11-21",
-    "score": "3 - 2",
-    "status": "FT",
-    "highlightUrl": "https://www.youtube.com/results?search_query=Crystal%20Palace%20at%20Coventry%20City%20highlights",
-    "upvotes": 0,
-    "downvotes": 0
-  },
-  {
-    "id": "401878754",
-    "teams": "Ipswich Town at Tottenham Hotspur",
-    "date": "2026-11-21",
-    "score": "2 - 0",
-    "status": "FT",
-    "highlightUrl": "https://www.youtube.com/results?search_query=Ipswich%20Town%20at%20Tottenham%20Hotspur%20highlights",
-    "upvotes": 0,
-    "downvotes": 0
-  },
-  {
-    "id": "401879232",
-    "teams": "Arsenal at Newcastle United",
-    "date": "2026-11-21",
-    "score": "2 - 2",
-    "status": "FT",
-    "highlightUrl": "https://www.youtube.com/results?search_query=Arsenal%20at%20Newcastle%20United%20highlights",
+    "id": "401878755",
+    "teams": "Manchester United at Liverpool",
+    "date": "2026-11-22",
+    "score": "vs",
+    "status": "Sun, November 22nd at 11:30 AM EST",
+    "highlightUrl": "https://www.youtube.com/results?search_query=Manchester%20United%20at%20Liverpool%20highlights",
     "upvotes": 0,
     "downvotes": 0
   }
